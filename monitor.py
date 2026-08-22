@@ -1,61 +1,52 @@
 import sys
 import time
-import winreg
 import threading
 import serial
+import serial.tools.list_ports
 
-# Thiết lập UTF-8 cho console Windows
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 if hasattr(sys.stdin, 'reconfigure'):
     sys.stdin.reconfigure(encoding='utf-8', errors='replace')
 
-def find_esp32_device_path():
-    """Tìm đường dẫn phần cứng thiết bị ESP32-S3 USB CDC"""
-    try:
-        k = winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE,
-            r'SYSTEM\CurrentControlSet\Control\DeviceClasses\{86e0d1e0-8089-11d0-9ce4-08003e301f73}'
-        )
-        count = winreg.QueryInfoKey(k)[0]
-        for i in range(count):
-            sub = winreg.EnumKey(k, i)
-            if 'VID_303A' in sub.upper() and 'PID_1001' in sub.upper():
-                return r'\\?\\' + sub[4:]
-    except Exception as e:
-        print(f"[ERROR] Khong tim thay ESP32-S3: {e}")
-    return None
+def find_port():
+    for p in serial.tools.list_ports.comports():
+        if '1001' in (p.hwid or '') or p.device == 'COM10':
+            return p.device
+    return 'COM10'
 
 def main():
-    device_path = find_esp32_device_path()
-    if not device_path:
-        print("[ERROR] Khong tim thay kit ESP32-S3 dang cam!")
-        sys.exit(1)
-
-    print("[CONNECTING] Dang ket noi toi ESP32-S3...")
+    port = find_port()
+    print(f"[CONNECTING] Dang ket noi toi ESP32-S3 ({port})...")
+    
     try:
-        ser = serial.Serial(device_path, 115200, timeout=0.1)
+        ser = serial.Serial(port, 115200, timeout=0.1)
         ser.dtr = True
-        ser.rts = False
+        ser.rts = True
     except Exception as e:
-        print(f"[ERROR] Khong the mo cong Serial: {e}")
+        print(f"[ERROR] Khong the mo cong {port}: {e}")
+        print(">> Kiem tra xem co chuong trinh nao khac dang mo cong khong.")
+        input("\nNhan Enter de thoat...")
         sys.exit(1)
 
-    time.sleep(0.5)
-    print("[CONNECTED] Da ket noi thanh cong! Nhap lenh (F, R, 1, 5, S, +, -, ?) va nhan Enter:")
-    print("-" * 60)
+    time.sleep(0.3)
+    print(f"[CONNECTED] Da ket noi {port}! Go lenh (vd: 1600, RUN, R, SPEED 500, STOP) roi Enter:")
+    print("=" * 65)
 
-    # Gửi lệnh '?' để lấy menu ban đầu
-    ser.write(b'?\n')
+    # Gửi lệnh HELP ban đầu
+    ser.write(b"HELP\n")
 
     running = True
 
     def reader():
         while running:
             try:
-                data = ser.read(ser.in_waiting or 1)
-                if data:
-                    print(data.decode('utf-8', errors='ignore'), end='', flush=True)
+                if ser.in_waiting:
+                    data = ser.read(ser.in_waiting)
+                    if data:
+                        print(data.decode('utf-8', errors='ignore'), end='', flush=True)
+                else:
+                    time.sleep(0.01)
             except Exception:
                 break
 
@@ -67,7 +58,8 @@ def main():
             cmd = input()
             if cmd.strip().lower() in ['exit', 'quit']:
                 break
-            ser.write((cmd.strip() + '\n').encode('utf-8'))
+            ser.write((cmd.strip() + "\r\n").encode('utf-8'))
+            time.sleep(0.05)
     except (KeyboardInterrupt, EOFError):
         pass
     finally:
@@ -80,3 +72,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

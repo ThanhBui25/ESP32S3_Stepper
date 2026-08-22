@@ -23,13 +23,14 @@ bool isContinuousMode = false;    // true: quay liên tục, false: chạy theo 
 long targetSteps = 0;             // Tổng số bước cần chạy
 long remainingSteps = 0;          // Số bước còn lại cần chạy
 long totalExecutedSteps = 0;      // Tổng số bước đã thực hiện từ lúc khởi động
+String inputBuffer = "";          // Bộ đệm nhận lệnh Serial
 
 void printHelp() {
   Serial.println("\n=======================================================");
   Serial.println(">>> BANG LENH DIEU KHIEN DONG CO BUOC ESP32-S3 <<<");
   Serial.println("=======================================================");
-  Serial.println(" 1. Nhap SO hoac STEP <so> (vd: 1600, STEP 3200): Chay dung so buoc roi DUNG");
-  Serial.println(" 2. SPEED <so> (vd: SPEED 500): Doi toc do quay (us)");
+  Serial.println(" 1. Nhap SO (vd: 1600, 3200 hoac STEP 1600): Chay du buoc roi DUNG");
+  Serial.println(" 2. SPEED <so> (vd: SPEED 500, SPEED 312): Doi toc do quay (us)");
   Serial.println(" 3. F hoac THUAN  : Chon chieu quay THUAN (Forward)");
   Serial.println(" 4. R hoac NGUOC  : Chon chieu quay NGUOC (Reverse)");
   Serial.println(" 5. D hoac DAO    : Tu dong DAO CHIEU quay");
@@ -147,6 +148,22 @@ void processCommand(String cmd) {
   }
 }
 
+void checkSerial() {
+  while (Serial.available() > 0) {
+    char c = (char)Serial.read();
+    if (c == '\n' || c == '\r') {
+      if (inputBuffer.length() > 0) {
+        processCommand(inputBuffer);
+        inputBuffer = "";
+      }
+    } else {
+      if (inputBuffer.length() < 64) {
+        inputBuffer += c;
+      }
+    }
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -166,15 +183,11 @@ void setup() {
 
   printHelp();
   Serial.printf(">> Khoi dong san sang! Toc do = %d us | Chieu = THUAN\n", stepDelay);
-  Serial.println(">> Nhap so buoc (vd: 1600 hoac STEP 1600) de bat dau quay:\n");
+  Serial.println(">> Nhap so buoc (vd: 1600 hoac STEP 1600 hoac RUN) de bat dau quay:\n");
 }
 
 void loop() {
-  // Kiểm tra nếu có lệnh từ Serial Monitor
-  if (Serial.available() > 0) {
-    String input = Serial.readStringUntil('\n');
-    processCommand(input);
-  }
+  checkSerial();
 
   // Phát xung bước nếu động cơ đang ở trạng thái chạy
   if (isRunning) {
@@ -194,9 +207,10 @@ void loop() {
       }
     }
   } else {
-    delay(10); // Nghỉ nhẹ khi tạm dừng
+    delay(5); // Nghỉ nhẹ khi tạm dừng
   }
 }
+
 
 
 
