@@ -16,7 +16,8 @@ const int ENA_PIN  = 6; // Nối vào ENA-
 // =============================================================================
 // BIẾN ĐIỀU KHIỂN TRẠNG THÁI, TỐC ĐỘ & SỐ BƯỚC
 // =============================================================================
-int stepDelay = 800;              // Nửa chu kỳ xung (micro giây)
+int speedHz = 1600;               // Tốc độ phát xung trực tiếp: XUNG TRÊN GIÂY (Hz)
+int stepDelay = 312;              // Nửa chu kỳ xung tính toán tự động: (1.000.000 / (2 * speedHz)) us
 bool currentDir = HIGH;           // HIGH = Chiều thuận, LOW = Chiều ngược
 bool isRunning = false;           // Trạng thái chạy/dừng của motor
 bool isContinuousMode = false;    // true: quay liên tục, false: chạy theo số bước
@@ -25,12 +26,23 @@ long remainingSteps = 0;          // Số bước còn lại cần chạy
 long totalExecutedSteps = 0;      // Tổng số bước đã thực hiện từ lúc khởi động
 String inputBuffer = "";          // Bộ đệm nhận lệnh Serial
 
+void setSpeedHz(int hz) {
+  if (hz >= 10 && hz <= 5000) {
+    speedHz = hz;
+    stepDelay = 1000000 / (2 * speedHz);
+    if (stepDelay < 100) stepDelay = 100;
+    Serial.printf("[OK] Da dat toc do: %d XUNG/GIAY (Hz) [stepDelay = %d us]\n", speedHz, stepDelay);
+  } else {
+    Serial.println("[LOI] Toc do phai nam trong khoang tu 10 den 5000 xung/giay! Vi du: SPEED 1600");
+  }
+}
+
 void printHelp() {
   Serial.println("\n=======================================================");
   Serial.println(">>> BANG LENH DIEU KHIEN DONG CO BUOC ESP32-S3 <<<");
   Serial.println("=======================================================");
-  Serial.println(" 1. Nhap SO (vd: 1600, 3200 hoac STEP 1600): Chay du buoc roi DUNG");
-  Serial.println(" 2. SPEED <so> (vd: SPEED 500, SPEED 312): Doi toc do quay (us)");
+  Serial.println(" 1. Nhap SO (vd: 1600, 3200 hoac STEP 1600): Chay du so buoc roi DUNG");
+  Serial.println(" 2. SPEED <xung/giay> (vd: SPEED 1600, SPEED 800, SPEED 2000): Doi toc do");
   Serial.println(" 3. F hoac THUAN  : Chon chieu quay THUAN (Forward)");
   Serial.println(" 4. R hoac NGUOC  : Chon chieu quay NGUOC (Reverse)");
   Serial.println(" 5. D hoac DAO    : Tu dong DAO CHIEU quay");
@@ -64,8 +76,8 @@ void processCommand(String cmd) {
         remainingSteps = steps;
         isContinuousMode = false;
         isRunning = true;
-        Serial.printf("[RUN] Bat dau chay %ld buoc | Toc do: %d us | Chieu: %s\n", 
-                      targetSteps, stepDelay, currentDir ? "THUAN" : "NGUOC");
+        Serial.printf("[RUN] Bat dau chay %ld buoc | Toc do: %d xung/s | Chieu: %s\n", 
+                      targetSteps, speedHz, currentDir ? "THUAN" : "NGUOC");
       } else {
         Serial.println("[LOI] So buoc phai lon hon 0! Vi du: STEP 1600");
       }
@@ -75,19 +87,13 @@ void processCommand(String cmd) {
     return;
   }
 
-  // Lệnh: SPEED <số us> hoặc SPD <số us>
-  if (command == "SPEED" || command == "SPD" || command == "DELAY") {
+  // Lệnh: SPEED <xung/giây> hoặc SPD <xung/giây> hoặc HZ <xung/giây>
+  if (command == "SPEED" || command == "SPD" || command == "HZ") {
     if (param.length() > 0) {
       int val = param.toInt();
-      if (val >= 100 && val <= 20000) {
-        stepDelay = val;
-        Serial.printf("[OK] Da doi toc do: %d us (~%.1f xung/giay)\n", 
-                      stepDelay, 1000000.0 / (stepDelay * 2));
-      } else {
-        Serial.println("[LOI] Toc do phai tu 100 us den 20000 us! Vi du: SPEED 500");
-      }
+      setSpeedHz(val);
     } else {
-      Serial.println("[HUONG DAN] Cu phap: SPEED <so_us>. Vi du: SPEED 500");
+      Serial.println("[HUONG DAN] Cu phap: SPEED <xung_tren_giay>. Vi du: SPEED 1600");
     }
     return;
   }
@@ -108,7 +114,7 @@ void processCommand(String cmd) {
       remainingSteps = steps;
       isContinuousMode = false;
       isRunning = true;
-      Serial.printf("[RUN] Nhan lenh chay %ld buoc (Tu dong dung sau khi chay xong)!\n", targetSteps);
+      Serial.printf("[RUN] Nhan lenh chay %ld buoc (Toc do: %d xung/giay | Tu dong dung khi du buoc)!\n", targetSteps, speedHz);
       return;
     }
   }
@@ -132,7 +138,7 @@ void processCommand(String cmd) {
   else if (command == "CONT" || command == "RUN" || command == "START" || command == "CHAY" || command == "GO") {
     isContinuousMode = true;
     isRunning = true;
-    Serial.printf("[RUN] Dong co quay LIEN TUC (Khong dung) | Toc do: %d us\n", stepDelay);
+    Serial.printf("[RUN] Dong co quay LIEN TUC (Khong dung) | Toc do: %d XUNG/GIAY\n", speedHz);
   }
   else if (command == "STOP" || command == "DUNG" || command == "PAUSE" || command == "HALT") {
     isRunning = false;
@@ -182,7 +188,7 @@ void setup() {
   digitalWrite(ENA_PIN, HIGH); // Common Anode: HIGH = Bật driver
 
   printHelp();
-  Serial.printf(">> Khoi dong san sang! Toc do = %d us | Chieu = THUAN\n", stepDelay);
+  Serial.printf(">> Khoi dong san sang! Toc do = %d XUNG/GIAY | Chieu = THUAN\n", speedHz);
   Serial.println(">> Nhap so buoc (vd: 1600 hoac STEP 1600 hoac RUN) de bat dau quay:\n");
 }
 
@@ -210,6 +216,7 @@ void loop() {
     delay(5); // Nghỉ nhẹ khi tạm dừng
   }
 }
+
 
 
 
