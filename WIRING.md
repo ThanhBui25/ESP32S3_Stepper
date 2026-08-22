@@ -55,7 +55,23 @@ Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode)**:
 
 ---
 
-## 4. Cài đặt Switch trên DM542E (Tham khảo)
+## 4. Bảng Lệnh Điều khiển qua Serial Monitor (Baud: 115200)
+
+Mở Serial Monitor trên máy tính (baud 115200) và gửi các lệnh sau để điều khiển động cơ trong thời gian thực:
+
+| Lệnh nhập | Ý nghĩa | Ví dụ |
+| :--- | :--- | :--- |
+| **Nhập số** (`100` - `20000`) | Đổi tốc độ quay theo micro giây ($\mu s$) | Gõ `500` (rất nhanh), `800` (nhanh), `1500` (chuẩn), `3000` (chậm) |
+| **`F`** hoặc **`THUAN`** | Quay theo chiều thuận (Forward) | Gõ `F` |
+| **`R`** hoặc **`NGUOC`** | Quay theo chiều ngược (Reverse) | Gõ `R` |
+| **`D`** hoặc **`DAO`** | Tự động đảo chiều quay | Gõ `D` |
+| **`STOP`** hoặc **`DUNG`** | Tạm dừng quay (trục vẫn giữ lực khóa) | Gõ `STOP` |
+| **`RUN`** hoặc **`CHAY`** | Tiếp tục quay động cơ | Gõ `RUN` |
+| **`HELP`** hoặc **`?`** | Xem menu hướng dẫn | Gõ `HELP` |
+
+---
+
+## 5. Cài đặt Switch trên DM542E (Tham khảo)
 - **SW1, SW2, SW3 (Cài đặt dòng điện - Output Current):**
   - Động cơ 42CM06-RD có dòng định mức khoảng 2.5A. Cài đặt SW1-SW3 trên DM542E ở mức RMS 2.0A - 2.5A (hoặc Peak 2.8A - 3.5A) phù hợp để tránh motor quá nóng.
 - **SW4 (Chế độ Standstill Current):**
@@ -63,4 +79,4 @@ Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode)**:
   - `ON`: Giữ nguyên dòng đầy đủ (Full Current).
 - **SW5, SW6, SW7, SW8 (Cài đặt Vi bước - Microstep):**
   - Tùy chỉnh số xung/vòng (Pulse/rev).
-  - Ví dụ: Nếu cài 1600 xung/vòng, hãy đặt biến `STEPS_PER_REV = 1600` trong code `src/main.cpp`.
+

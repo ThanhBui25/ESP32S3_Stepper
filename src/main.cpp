@@ -14,17 +14,87 @@ const int DIR_PIN  = 5; // Nối vào DIR-
 const int ENA_PIN  = 6; // Nối vào ENA-
 
 // =============================================================================
-// THỜI GIAN TRỄ (TỐC ĐỘ)
+// BIẾN ĐIỀU KHIỂN TRẠNG THÁI & TỐC ĐỘ
 // =============================================================================
-// 1000us - 2000us là tốc độ chuẩn an toàn giúp động cơ khởi động êm, không bị khựng/kẹt
-int stepDelay = 1500; // microseconds (Nửa chu kỳ xung)
+int stepDelay = 800;          // Nửa chu kỳ xung (micro giây)
+bool currentDir = HIGH;       // HIGH = Chiều thuận, LOW = Chiều ngược
+bool isRunning = true;        // Trạng thái chạy/dừng của motor
+
+void printHelp() {
+  Serial.println("\n=======================================================");
+  Serial.println(">>> BANG LENH DIEU KHIEN DONG CO BUOC ESP32-S3 <<<");
+  Serial.println("=======================================================");
+  Serial.println(" 1. Nhap SO (vd: 500, 800, 1500, 3000): Doi toc do (us)");
+  Serial.println(" 2. F hoac THUAN  : Quay chieu THUAN (Forward)");
+  Serial.println(" 3. R hoac NGUOC  : Quay chieu NGUOC (Reverse)");
+  Serial.println(" 4. D hoac DAO    : Tu dong DAO CHIEU quay");
+  Serial.println(" 5. STOP hoac DUNG: TAM DUNG dong co");
+  Serial.println(" 6. RUN hoac CHAY : TIEP TUC quay dong co");
+  Serial.println(" 7. HELP hoac ?   : Xem lai bang huong dan nay");
+  Serial.println("=======================================================\n");
+}
+
+void processCommand(String cmd) {
+  cmd.trim();
+  if (cmd.length() == 0) return;
+
+  // Kiểm tra nếu người dùng nhập số để đổi tốc độ
+  bool isNumber = true;
+  for (unsigned int i = 0; i < cmd.length(); i++) {
+    if (!isDigit(cmd.charAt(i))) {
+      isNumber = false;
+      break;
+    }
+  }
+
+  if (isNumber) {
+    int val = cmd.toInt();
+    if (val >= 100 && val <= 20000) {
+      stepDelay = val;
+      Serial.printf("[OK] Da cap nhat toc do moi: %d us (~%.1f xung/giay)\n", stepDelay, 1000000.0 / (stepDelay * 2));
+    } else {
+      Serial.println("[LOI] Gia tri toc do khong hop le! Vui long nhap tu 100 us den 20000 us.");
+    }
+    return;
+  }
+
+  // Chuyển lệnh sang chữ in hoa để so sánh
+  cmd.toUpperCase();
+
+  if (cmd == "F" || cmd == "THUAN" || cmd == "FORWARD" || cmd == "CW") {
+    currentDir = HIGH;
+    digitalWrite(DIR_PIN, currentDir);
+    Serial.println("[OK] Da chuyen sang chieu: THUAN (Forward / HIGH)");
+  }
+  else if (cmd == "R" || cmd == "NGUOC" || cmd == "REVERSE" || cmd == "CCW") {
+    currentDir = LOW;
+    digitalWrite(DIR_PIN, currentDir);
+    Serial.println("[OK] Da chuyen sang chieu: NGUOC (Reverse / LOW)");
+  }
+  else if (cmd == "D" || cmd == "DAO" || cmd == "TOGGLE") {
+    currentDir = !currentDir;
+    digitalWrite(DIR_PIN, currentDir);
+    Serial.printf("[OK] Da dao chieu quay -> Hien tai: %s\n", currentDir ? "THUAN (HIGH)" : "NGUOC (LOW)");
+  }
+  else if (cmd == "STOP" || cmd == "DUNG" || cmd == "PAUSE") {
+    isRunning = false;
+    Serial.println("[PAUSE] Dong co da TAM DUNG (Truc van duoc khoa giu vi tri).");
+  }
+  else if (cmd == "RUN" || cmd == "START" || cmd == "CHAY" || cmd == "GO") {
+    isRunning = true;
+    Serial.println("[RUN] Dong co TIEP TUC quay.");
+  }
+  else if (cmd == "HELP" || cmd == "?" || cmd == "MENU") {
+    printHelp();
+  }
+  else {
+    Serial.printf("[?] Khong nhan dien duoc lenh: '%s'. Go 'HELP' de xem huong dan.\n", cmd.c_str());
+  }
+}
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  Serial.println("\n=================================");
-  Serial.println("ESP32-S3 Stepper Motor (Common Anode)...");
-  Serial.println("=================================");
 
   // Cấu hình chân Output
   pinMode(STEP_PIN, OUTPUT);
@@ -36,22 +106,30 @@ void setup() {
   pinMode(48, OUTPUT);
 
   // Thiết lập trạng thái ban đầu:
-  // 1. Chân DIR: HIGH hoặc LOW để chọn chiều quay
-  digitalWrite(DIR_PIN, HIGH);
+  digitalWrite(DIR_PIN, currentDir);
+  digitalWrite(ENA_PIN, HIGH); // Common Anode: HIGH = Bật driver
 
-  // 2. Chân ENA: 
-  // Đối với kiểu Cực Dương Chung (Common Anode):
-  // - Xuất HIGH (3.3V - 3.3V = 0V): Opto ENA tắt -> Driver được BẬT (Enable/Khóa trục motor).
-  // - Xuất LOW  (3.3V - 0V = 3.3V): Opto ENA sáng -> Driver bị TẮT (Disable/Thả tự do motor).
-  digitalWrite(ENA_PIN, HIGH);
+  printHelp();
+  Serial.printf(">> Trang thai khoi dong: Toc do = %d us | Chieu = THUAN | Dang chay = BAT DAU\n\n", stepDelay);
 }
 
 void loop() {
-  // Phát xung bước (Active-LOW: Kéo LOW để kích sáng Opto PUL-, sau đó kéo HIGH để tắt)
-  digitalWrite(STEP_PIN, LOW);
-  delayMicroseconds(stepDelay);
-  digitalWrite(STEP_PIN, HIGH);
-  delayMicroseconds(stepDelay);
+  // Kiểm tra nếu có lệnh từ Serial Monitor
+  if (Serial.available() > 0) {
+    String input = Serial.readStringUntil('\n');
+    processCommand(input);
+  }
+
+  // Phát xung bước nếu động cơ đang ở trạng thái chạy
+  if (isRunning) {
+    digitalWrite(STEP_PIN, LOW);   // Active-LOW (Common Anode)
+    delayMicroseconds(stepDelay);
+    digitalWrite(STEP_PIN, HIGH);
+    delayMicroseconds(stepDelay);
+  } else {
+    delay(10); // Nghỉ nhẹ khi tạm dừng
+  }
 }
+
 
 
