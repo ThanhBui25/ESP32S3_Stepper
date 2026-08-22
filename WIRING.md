@@ -61,13 +61,14 @@ Mở Serial Monitor trên máy tính (baud 115200) và gửi các lệnh sau đ�
 
 | Lệnh nhập | Ý nghĩa | Ví dụ |
 | :--- | :--- | :--- |
-| **Nhập số** (`100` - `20000`) | Đổi tốc độ quay theo micro giây ($\mu s$) | Gõ `500` (rất nhanh), `800` (nhanh), `1500` (chuẩn), `3000` (chậm) |
-| **`F`** hoặc **`THUAN`** | Quay theo chiều thuận (Forward) | Gõ `F` |
-| **`R`** hoặc **`NGUOC`** | Quay theo chiều ngược (Reverse) | Gõ `R` |
+| **`1600`** hoặc **`STEP 1600`** | Chạy đúng số bước rồi **TỰ ĐỘNG DỪNG** | Gõ `1600` (quay 1 vòng nếu gạt 1600 vi bước), gõ `3200` (quay 2 vòng) |
+| **`SPEED <số>`** | Đổi tốc độ quay theo micro giây ($\mu s$) | Gõ `SPEED 500` (rất nhanh), `SPEED 800` (nhanh), `SPEED 1500` (chuẩn) |
+| **`F`** hoặc **`THUAN`** | Chọn chiều quay thuận (Forward) | Gõ `F` |
+| **`R`** hoặc **`NGUOC`** | Chọn chiều quay ngược (Reverse) | Gõ `R` |
 | **`D`** hoặc **`DAO`** | Tự động đảo chiều quay | Gõ `D` |
-| **`STOP`** hoặc **`DUNG`** | Tạm dừng quay (trục vẫn giữ lực khóa) | Gõ `STOP` |
-| **`RUN`** hoặc **`CHAY`** | Tiếp tục quay động cơ | Gõ `RUN` |
-| **`HELP`** hoặc **`?`** | Xem menu hướng dẫn | Gõ `HELP` |
+| **`CONT`** hoặc **`RUN`** | Quay LIÊN TỤC không dừng | Gõ `CONT` hoặc `RUN` |
+| **`STOP`** hoặc **`DUNG`** | Dừng khẩn cấp động cơ (trục vẫn khóa) | Gõ `STOP` |
+| **`HELP`** hoặc **`?`** | Xem lại bảng menu hướng dẫn | Gõ `HELP` |
 
 ---
 
