@@ -1,17 +1,17 @@
 #include <Arduino.h>
 
 // =============================================================================
-// CẤU HÌNH CHÂN GPIO (KIỂU ĐẤU CỰC ÂM CHUNG - COMMON CATHODE)
+// CẤU HÌNH CHÂN GPIO (KIỂU ĐẤU CỰC DƯƠNG CHUNG - COMMON ANODE)
 // =============================================================================
-// ESP32-S3 GPIO -> Driver Dương (+):
-// GPIO 4  -> PUL+ (Xung bước)
-// GPIO 5  -> DIR+ (Chiều quay)
-// GPIO 6  -> ENA+ (Kích hoạt Driver)
-// Chân GND ESP32 -> Nối chung vào PUL-, DIR-, ENA-
+// 1. Chân 3.3V của ESP32-S3 -> Nối chung vào 3 chân: PUL+ , DIR+ , ENA+
+// 2. Chân GPIO của ESP32-S3  -> Nối vào các chân âm của Driver:
+//    - GPIO 4 -> PUL- (Phát xung bước)
+//    - GPIO 5 -> DIR- (Chọn chiều quay)
+//    - GPIO 6 -> ENA- (Kích hoạt Driver - hoặc bỏ trống không cần cắm)
 // =============================================================================
-const int STEP_PIN = 4; // Chân xung PUL+ / STEP+
-const int DIR_PIN  = 5; // Chân chiều DIR+
-const int ENA_PIN  = 6; // Chân kích hoạt ENA+
+const int STEP_PIN = 4; // Nối vào PUL-
+const int DIR_PIN  = 5; // Nối vào DIR-
+const int ENA_PIN  = 6; // Nối vào ENA-
 
 // =============================================================================
 // THỜI GIAN TRỄ (TỐC ĐỘ)
@@ -23,7 +23,7 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
   Serial.println("\n=================================");
-  Serial.println("ESP32-S3 Stepper Motor (Common Cathode)...");
+  Serial.println("ESP32-S3 Stepper Motor (Common Anode)...");
   Serial.println("=================================");
 
   // Cấu hình chân Output
@@ -31,26 +31,27 @@ void setup() {
   pinMode(DIR_PIN, OUTPUT);
   pinMode(ENA_PIN, OUTPUT);
 
-  // Cấu hình LED báo trạng thái
+  // Cấu hình LED báo trạng thái trên mạch
   pinMode(2, OUTPUT);
   pinMode(48, OUTPUT);
 
-  // Thiết lập mức ban đầu:
-  // 1. Chân DIR: HIGH hoặc LOW để chọn chiều quay (HIGH = một chiều, LOW = chiều ngược lại)
+  // Thiết lập trạng thái ban đầu:
+  // 1. Chân DIR: HIGH hoặc LOW để chọn chiều quay
   digitalWrite(DIR_PIN, HIGH);
 
   // 2. Chân ENA: 
-  // Đối với kiểu Cực Âm Chung (Common Cathode):
-  // - Xuất LOW: Opto ENA tắt -> Driver được BẬT (Enable/Giữ trục).
-  // - Xuất HIGH: Opto ENA sáng -> Driver bị TẮT (Disable/Thả tự do).
-  digitalWrite(ENA_PIN, LOW);
+  // Đối với kiểu Cực Dương Chung (Common Anode):
+  // - Xuất HIGH (3.3V - 3.3V = 0V): Opto ENA tắt -> Driver được BẬT (Enable/Khóa trục motor).
+  // - Xuất LOW  (3.3V - 0V = 3.3V): Opto ENA sáng -> Driver bị TẮT (Disable/Thả tự do motor).
+  digitalWrite(ENA_PIN, HIGH);
 }
 
 void loop() {
-  // Phát xung điều khiển bước (Kéo HIGH để kích opto PUL+, sau đó kéo LOW)
-  digitalWrite(STEP_PIN, HIGH);
-  delayMicroseconds(stepDelay);
+  // Phát xung bước (Active-LOW: Kéo LOW để kích sáng Opto PUL-, sau đó kéo HIGH để tắt)
   digitalWrite(STEP_PIN, LOW);
   delayMicroseconds(stepDelay);
+  digitalWrite(STEP_PIN, HIGH);
+  delayMicroseconds(stepDelay);
 }
+
 

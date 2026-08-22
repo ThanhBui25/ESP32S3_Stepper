@@ -33,14 +33,14 @@
 ---
 
 ### C. Tín hiệu Điều khiển Logic (ESP32-S3 -> Driver DM542E)
-Hệ thống sử dụng kiểu đấu **Cực Âm Chung (Common Cathode)**:
+Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode)**:
 
 | Chân ESP32-S3 | Chân Driver DM542E | Chức năng | Mô tả tín hiệu |
 | :--- | :--- | :--- | :--- |
-| **GPIO 4** | **PUL+** | Xung bước (STEP/PUL) | Xuất xung HIGH/LOW để quay bước |
-| **GPIO 5** | **DIR+** | Chiều quay (DIR) | HIGH / LOW để đổi chiều quay |
-| **GPIO 6** | **ENA+** | Bật/Tắt Driver (ENABLE) | LOW = Bật Driver (giữ trục), HIGH = Thả tự do |
-| **GND** | **PUL- / DIR- / ENA-** | Nối Đất Chung | Nối chung 3 chân âm lại và cắm vào chân **GND** của ESP32-S3 |
+| **3.3V (Nguồn Dương)** | **PUL+ / DIR+ / ENA+** | Nối Dương Chung | Nối chung 3 chân dương lại và cắm vào chân **3.3V** của ESP32-S3 |
+| **GPIO 4** | **PUL-** | Xung bước (STEP/PUL) | Kéo LOW để kích xung quay |
+| **GPIO 5** | **DIR-** | Chiều quay (DIR) | HIGH/LOW để đổi chiều quay |
+| **GPIO 6** | **ENA-** | Bật/Tắt Driver (ENABLE) | HIGH = Bật Driver, LOW = Thả tự do (hoặc bỏ trống không cắm) |
 
 ---
 
