@@ -40,7 +40,13 @@ def flash():
     print("[INFO] Putting ESP32-S3 into ROM Bootloader / Download Mode...")
 
     # Open serial and send USB-JTAG-Serial reset sequence into download mode
-    s = serial.Serial(device_path, 115200, timeout=0.5, write_timeout=None)
+    port_to_use = device_path
+    try:
+        s = serial.Serial(port_to_use, 115200, timeout=0.5, write_timeout=None)
+    except Exception:
+        port_to_use = 'COM10'
+        s = serial.Serial(port_to_use, 115200, timeout=0.5, write_timeout=None)
+
     reset_strat = USBJTAGSerialReset(s)
     reset_strat()
     time.sleep(0.3)
@@ -55,19 +61,18 @@ def flash():
 
     flash_args = [
         '--chip', 'esp32s3',
-        '--port', device_path,
+        '--port', port_to_use,
         '--baud', '921600',
         '--before', 'no_reset',
         '--after', 'hard_reset',
-        'write_flash',
-        '-z',
+        'write_flash', '-z',
         '--flash_mode', 'dio',
         '--flash_freq', '80m',
         '--flash_size', '8MB',
-        '0x0', bootloader_bin,
+        '0x0000', bootloader_bin,
         '0x8000', partitions_bin,
         '0xe000', boot_app0_bin,
-        '0x10000', firmware_bin,
+        '0x10000', firmware_bin
     ]
 
     print("[INFO] Writing firmware to ESP32-S3 flash...")

@@ -44,6 +44,31 @@ Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode)** ch
 
 ---
 
+### D. Tín hiệu Module Bàn phím & Màn hình TM1638 (LED & KEY)
+
+| Chân trên TM1638 | Chân trên ESP32-S3 | Chức năng |
+| :--- | :--- | :--- |
+| **`VCC`** | **`3.3V`** *(hoặc 5V)* | Nguồn dương nuôi mạch |
+| **`GND`** | **`GND`** | Nguồn âm đất |
+| **`STB`** | **`GPIO 10`** | Chân chọn chip Strobe |
+| **`CLK`** | **`GPIO 11`** | Chân xung đồng hồ Clock |
+| **`DIO`** | **`GPIO 12`** | Chân dữ liệu 2 chiều Data I/O |
+
+#### Bảng Chức Năng 8 Đèn LED Đỏ ($D_1 \rightarrow D_8$) & 8 Nút Bấm ($S_1 \rightarrow S_8$):
+
+| Cặp Nút & LED | Chức năng Nút bấm | Trạng thái Đèn LED Đỏ hiển thị |
+| :---: | :--- | :--- |
+| **`S1` / `D1`** | Bấm quay **1 VÒNG** ($8000$ bước) | **`D1` sáng duy nhất** khi đang quay 1 vòng (xong tự tắt) |
+| **`S2` / `D2`** | Bấm quay **2 VÒNG** ($16000$ bước) | **`D2` sáng duy nhất** khi đang quay 2 vòng (xong tự tắt) |
+| **`S3` / `D3`** | Bấm quay **90 ĐỘ** ($2000$ bước) | **`D3` sáng duy nhất** khi đang quay 90 độ (xong tự tắt) |
+| **`S4` / `D4`** | Bấm **ĐẢO CHIỀU** (Thuận / Ngược) | **`D4` sáng** khi Chiều Thuận (F), **`D4` tắt** khi Chiều Ngược (R) |
+| **`S5` / `D5`** | Bấm **TĂNG TỐC** ($+200\text{ Hz}$) | **`D5` chớp sáng** xác nhận vừa tăng tốc độ |
+| **`S6` / `D6`** | Bấm **GIẢM TỐC** ($-200\text{ Hz}$) | **`D6` chớp sáng** xác nhận vừa giảm tốc độ |
+| **`S7` / `D7`** | Bấm quay **LIÊN TỤC (`RUN`)** | **`D7` sáng duy nhất** trong suốt quá trình quay liên tục |
+| **`S8` / `D8`** | Bấm **DỪNG KHẨN CẤP (`STOP`)** | **`D8` sáng duy nhất** khi động cơ đang ở trạng thái DỪNG |
+
+---
+
 ## 3. Lưu ý Kỹ thuật về Tín hiệu Điều khiển 3.3V và Driver DM542E
 
 1. **Điện áp cách ly quang (Optocoupler Input) của DM542E:**

@@ -11,6 +11,9 @@
 - Đối với các thao tác an toàn và xây dựng như:
   - Đọc tài liệu, tra cứu web, đọc URL.
   - Xem nội dung file, tìm kiếm mã nguồn.
-  - Tạo file mới, chỉnh sửa / cập nhật nội dung file.
-  - Chạy lệnh build, test, lint, cài đặt package, clone repository.
+  - Tạo file mới, chỉnh sửa / cập nhật nội dung file trên máy cục bộ.
+  - Chạy lệnh build, test, lint, cài đặt package, nạp code xuống mạch.
   -> Agent chủ động tự động thực hiện mà **KHÔNG CẦN** hỏi xác nhận từng bước, giúp tiết kiệm thời gian cho người dùng.
+
+## 3. QUY TẮC BẢO VỆ GITHUB (KHÔNG TỰ Ý ĐẨY CODE LÊN GITHUB)
+- **Tuyệt đối KHÔNG tự ý gửi/đẩy code lên GitHub (`git push`)**: Agent chỉ thực hiện đẩy code lên GitHub khi người dùng ra lệnh rõ ràng (ví dụ: *"đẩy lên github"*, *"push code"*, *"lưu lên github"*).
