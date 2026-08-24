@@ -58,10 +58,15 @@ def main():
             cmd = input()
             if cmd.strip().lower() in ['exit', 'quit']:
                 break
-            ser.write((cmd.strip() + "\r\n").encode('utf-8'))
-            time.sleep(0.05)
+            try:
+                ser.write((cmd.strip() + "\r\n").encode('utf-8'))
+                ser.flush()
+            except Exception as e:
+                print(f"[CANH BAO] Loi gui lenh qua Serial: {e}")
+            time.sleep(0.02)
     except (KeyboardInterrupt, EOFError):
         pass
+
     finally:
         running = False
         try:
