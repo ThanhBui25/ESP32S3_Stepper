@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 // =============================================================================
-// CẤU HÌNH CHÂN GPIO (KIỂU ĐẤU CỰC DƯƠNG CHUNG - COMMON ANODE)
+// CẤU HÌNH CHÂN GPIO 1 ĐỘNG CƠ (KIỂU ĐẤU CỰC DƯƠNG CHUNG - COMMON ANODE)
 // =============================================================================
 // 1. Chân 3.3V của ESP32-S3 -> Nối chung vào 3 chân: PUL+ , DIR+ , ENA+
 // 2. Chân GPIO của ESP32-S3  -> Nối vào các chân âm của Driver:
@@ -17,9 +17,9 @@ const int ENA_PIN  = 6; // Nối vào ENA-
 // BIẾN ĐIỀU KHIỂN TRẠNG THÁI, TỐC ĐỘ & SỐ BƯỚC
 // =============================================================================
 int speedHz = 1600;               // Tốc độ phát xung trực tiếp: XUNG TRÊN GIÂY (Hz)
-int stepDelay = 312;              // Nửa chu kỳ xung tính toán tự động: (1.000.000 / (2 * speedHz)) us
+int stepDelay = 312;              // Nửa chu kỳ xung tính toán: 1.000.000 / (2 * speedHz) us
 bool currentDir = HIGH;           // HIGH = Chiều thuận, LOW = Chiều ngược
-bool isRunning = false;           // Trạng thái chạy/dừng của motor
+bool isRunning = false;           // Trạng thái chạy / dừng của motor
 bool isContinuousMode = false;    // true: quay liên tục, false: chạy theo số bước
 long targetSteps = 0;             // Tổng số bước cần chạy
 long remainingSteps = 0;          // Số bước còn lại cần chạy
@@ -33,16 +33,16 @@ void setSpeedHz(int hz) {
     if (stepDelay < 100) stepDelay = 100;
     Serial.printf("[OK] Da dat toc do: %d XUNG/GIAY (Hz) [stepDelay = %d us]\n", speedHz, stepDelay);
   } else {
-    Serial.println("[LOI] Toc do phai nam trong khoang tu 10 den 5000 xung/giay! Vi du: SPEED 1600");
+    Serial.println("[LOI] Toc do phai tu 10 den 5000 xung/giay! Vi du: SPEED 1600");
   }
 }
 
 void printHelp() {
   Serial.println("\n=======================================================");
-  Serial.println(">>> BANG LENH DIEU KHIEN DONG CO BUOC ESP32-S3 <<<");
+  Serial.println(">>> BANG LENH DIEU KHIEN 1 DONG CO BUOC ESP32-S3 <<<");
   Serial.println("=======================================================");
-  Serial.println(" 1. Nhap SO (vd: 1600, 3200 hoac STEP 1600): Chay du so buoc roi DUNG");
-  Serial.println(" 2. SPEED <xung/giay> (vd: SPEED 1600, SPEED 800, SPEED 2000): Doi toc do");
+  Serial.println(" 1. Nhap SO (vd: 1600, 3200 hoac STEP 1600): Chay du buoc roi DUNG");
+  Serial.println(" 2. SPEED <xung/giay> (vd: SPEED 1600, SPEED 800): Doi toc do");
   Serial.println(" 3. F hoac THUAN  : Chon chieu quay THUAN (Forward)");
   Serial.println(" 4. R hoac NGUOC  : Chon chieu quay NGUOC (Reverse)");
   Serial.println(" 5. D hoac DAO    : Tu dong DAO CHIEU quay");
@@ -188,8 +188,9 @@ void setup() {
   digitalWrite(ENA_PIN, HIGH); // Common Anode: HIGH = Bật driver
 
   printHelp();
-  Serial.printf(">> Khoi dong san sang! Toc do = %d XUNG/GIAY | Chieu = THUAN\n", speedHz);
-  Serial.println(">> Nhap so buoc (vd: 1600 hoac STEP 1600 hoac RUN) de bat dau quay:\n");
+  Serial.printf(">> Khoi dong san sang! 1 Dong co (PUL=%d, DIR=%d, ENA=%d) | Toc do = %d XUNG/GIAY\n", 
+                STEP_PIN, DIR_PIN, ENA_PIN, speedHz);
+  Serial.println(">> Nhap so buoc (vd: 1600 hoac RUN) de bat dau quay:\n");
 }
 
 void loop() {
@@ -216,9 +217,3 @@ void loop() {
     delay(5); // Nghỉ nhẹ khi tạm dừng
   }
 }
-
-
-
-
-
-

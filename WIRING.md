@@ -33,7 +33,7 @@
 ---
 
 ### C. Tín hiệu Điều khiển Logic (ESP32-S3 -> Driver DM542E)
-Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode)**:
+Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode)** cho **1 Động cơ bước**:
 
 | Chân ESP32-S3 | Chân Driver DM542E | Chức năng | Mô tả tín hiệu |
 | :--- | :--- | :--- | :--- |
