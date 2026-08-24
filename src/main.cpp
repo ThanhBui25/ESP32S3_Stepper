@@ -13,6 +13,11 @@ const int STEP_PIN = 4; // Nối vào PUL-
 const int DIR_PIN  = 5; // Nối vào DIR-
 const int ENA_PIN  = 6; // Nối vào ENA-
 
+// Chân RGB LED tích hợp trên ESP32-S3 DevKitC-1
+#ifndef RGB_BUILTIN
+#define RGB_BUILTIN 48
+#endif
+
 // =============================================================================
 // BIẾN ĐIỀU KHIỂN TRẠNG THÁI, TỐC ĐỘ & SỐ BƯỚC
 // =============================================================================
@@ -26,30 +31,40 @@ long remainingSteps = 0;          // Số bước còn lại cần chạy
 long totalExecutedSteps = 0;      // Tổng số bước đã thực hiện từ lúc khởi động
 String inputBuffer = "";          // Bộ đệm nhận lệnh Serial
 
+// Hàm đổi màu LED RGB tích hợp
+void setLedColor(uint8_t r, uint8_t g, uint8_t b) {
+  neopixelWrite(RGB_BUILTIN, r, g, b);
+  neopixelWrite(48, r, g, b);
+  neopixelWrite(38, r, g, b);
+}
+
 void setSpeedHz(int hz) {
   if (hz >= 10 && hz <= 5000) {
     speedHz = hz;
     stepDelay = 1000000 / (2 * speedHz);
     if (stepDelay < 100) stepDelay = 100;
-    Serial.printf("[OK] Da dat toc do: %d XUNG/GIAY (Hz) [stepDelay = %d us]\n", speedHz, stepDelay);
+    setLedColor(0, 150, 255); // Xanh lam nhạt khi đổi tốc độ
+    Serial.printf("[OK] Da dat toc do: %d XUNG/GIAY (Hz) [stepDelay = %d us] (LED: Xanh lam)\n", speedHz, stepDelay);
   } else {
+    setLedColor(255, 0, 0); // Đỏ báo lỗi
     Serial.println("[LOI] Toc do phai tu 10 den 5000 xung/giay! Vi du: SPEED 1600");
   }
 }
 
 void printHelp() {
-  Serial.println("\n=======================================================");
-  Serial.println(">>> BANG LENH DIEU KHIEN 1 DONG CO BUOC ESP32-S3 <<<");
-  Serial.println("=======================================================");
-  Serial.println(" 1. Nhap SO (vd: 1600, 3200 hoac STEP 1600): Chay du buoc roi DUNG");
-  Serial.println(" 2. SPEED <xung/giay> (vd: SPEED 1600, SPEED 800): Doi toc do");
-  Serial.println(" 3. F hoac THUAN  : Chon chieu quay THUAN (Forward)");
-  Serial.println(" 4. R hoac NGUOC  : Chon chieu quay NGUOC (Reverse)");
-  Serial.println(" 5. D hoac DAO    : Tu dong DAO CHIEU quay");
-  Serial.println(" 6. CONT hoac RUN : Quay LIEN TUC khong dung");
-  Serial.println(" 7. STOP hoac DUNG: DUNG KHAN CAP dong co");
-  Serial.println(" 8. HELP hoac ?   : Xem lai bang huong dan nay");
-  Serial.println("=======================================================\n");
+  setLedColor(200, 200, 200); // Trắng khi xem help
+  Serial.println("\n===================================================================");
+  Serial.println(">>> BANG LENH DIEU KHIEN 1 DONG CO BUOC ESP32-S3 + DEN LED RGB <<<");
+  Serial.println("===================================================================");
+  Serial.println(" 1. Nhap SO (vd: 1600, 3200 hoac STEP 1600): Chay du buoc roi DUNG [LED CYAN/TIM]");
+  Serial.println(" 2. SPEED <xung/giay> (vd: SPEED 1600, SPEED 800)  : Doi toc do    [LED XANH LAM]");
+  Serial.println(" 3. F hoac THUAN  : Chon chieu quay THUAN (Forward)                 [LED VANG]");
+  Serial.println(" 4. R hoac NGUOC  : Chon chieu quay NGUOC (Reverse)                 [LED CAM]");
+  Serial.println(" 5. D hoac DAO    : Tu dong DAO CHIEU quay                          [LED TRANG]");
+  Serial.println(" 6. CONT hoac RUN : Quay LIEN TUC khong dung                        [LED XANH LA]");
+  Serial.println(" 7. STOP hoac DUNG: DUNG KHAN CAP dong co                           [LED DO]");
+  Serial.println(" 8. HELP hoac ?   : Xem lai bang huong dan nay                      [LED TRANG]");
+  Serial.println("===================================================================\n");
 }
 
 void processCommand(String cmd) {
@@ -76,9 +91,11 @@ void processCommand(String cmd) {
         remainingSteps = steps;
         isContinuousMode = false;
         isRunning = true;
-        Serial.printf("[RUN] Bat dau chay %ld buoc | Toc do: %d xung/s | Chieu: %s\n", 
+        setLedColor(0, 255, 255); // Xanh ngọc (Cyan) khi đang chạy bước
+        Serial.printf("[RUN] Bat dau chay %ld buoc | Toc do: %d xung/s | Chieu: %s (LED: Xanh ngoc)\n", 
                       targetSteps, speedHz, currentDir ? "THUAN" : "NGUOC");
       } else {
+        setLedColor(255, 0, 0); // Đỏ báo lỗi
         Serial.println("[LOI] So buoc phai lon hon 0! Vi du: STEP 1600");
       }
     } else {
@@ -114,7 +131,8 @@ void processCommand(String cmd) {
       remainingSteps = steps;
       isContinuousMode = false;
       isRunning = true;
-      Serial.printf("[RUN] Nhan lenh chay %ld buoc (Toc do: %d xung/giay | Tu dong dung khi du buoc)!\n", targetSteps, speedHz);
+      setLedColor(0, 255, 255); // Xanh ngọc (Cyan) khi chạy số bước
+      Serial.printf("[RUN] Nhan lenh chay %ld buoc (Toc do: %d xung/giay | LED: Xanh ngoc)!\n", targetSteps, speedHz);
       return;
     }
   }
@@ -123,33 +141,39 @@ void processCommand(String cmd) {
   if (command == "F" || command == "THUAN" || command == "FORWARD" || command == "CW") {
     currentDir = HIGH;
     digitalWrite(DIR_PIN, currentDir);
-    Serial.println("[OK] Da chuyen sang chieu: THUAN (Forward / HIGH)");
+    setLedColor(255, 200, 0); // Vàng
+    Serial.println("[OK] Da chuyen sang chieu: THUAN (Forward / HIGH) (LED: Vang)");
   }
   else if (command == "R" || command == "NGUOC" || command == "REVERSE" || command == "CCW") {
     currentDir = LOW;
     digitalWrite(DIR_PIN, currentDir);
-    Serial.println("[OK] Da chuyen sang chieu: NGUOC (Reverse / LOW)");
+    setLedColor(255, 80, 0); // Cam
+    Serial.println("[OK] Da chuyen sang chieu: NGUOC (Reverse / LOW) (LED: Cam)");
   }
   else if (command == "D" || command == "DAO" || command == "TOGGLE") {
     currentDir = !currentDir;
     digitalWrite(DIR_PIN, currentDir);
-    Serial.printf("[OK] Da dao chieu quay -> Hien tai: %s\n", currentDir ? "THUAN (HIGH)" : "NGUOC (LOW)");
+    setLedColor(255, 255, 255); // Trắng
+    Serial.printf("[OK] Da dao chieu quay -> Hien tai: %s (LED: Trang)\n", currentDir ? "THUAN (HIGH)" : "NGUOC (LOW)");
   }
   else if (command == "CONT" || command == "RUN" || command == "START" || command == "CHAY" || command == "GO") {
     isContinuousMode = true;
     isRunning = true;
-    Serial.printf("[RUN] Dong co quay LIEN TUC (Khong dung) | Toc do: %d XUNG/GIAY\n", speedHz);
+    setLedColor(0, 255, 0); // Xanh lá cây
+    Serial.printf("[RUN] Dong co quay LIEN TUC (Khong dung) | Toc do: %d XUNG/GIAY (LED: Xanh la)\n", speedHz);
   }
   else if (command == "STOP" || command == "DUNG" || command == "PAUSE" || command == "HALT") {
     isRunning = false;
     isContinuousMode = false;
     remainingSteps = 0;
-    Serial.println("[PAUSE] Dong co da DUNG (Truc van duoc khoa giu vi tri).");
+    setLedColor(255, 0, 0); // Đỏ
+    Serial.println("[PAUSE] Dong co da DUNG (Truc van duoc khoa giu vi tri) (LED: Do).");
   }
   else if (command == "HELP" || command == "?" || command == "MENU") {
     printHelp();
   }
   else {
+    setLedColor(255, 0, 0); // Đỏ nháy báo lỗi
     Serial.printf("[?] Khong nhan dien duoc lenh: '%s'. Go 'HELP' de xem huong dan.\n", cmd.c_str());
   }
 }
@@ -187,8 +211,11 @@ void setup() {
   digitalWrite(DIR_PIN, currentDir);
   digitalWrite(ENA_PIN, HIGH); // Common Anode: HIGH = Bật driver
 
+  // Đổi màu LED sang Xanh dương dịu báo hiệu sẵn sàng
+  setLedColor(0, 0, 150);
+
   printHelp();
-  Serial.printf(">> Khoi dong san sang! 1 Dong co (PUL=%d, DIR=%d, ENA=%d) | Toc do = %d XUNG/GIAY\n", 
+  Serial.printf(">> Khoi dong san sang! 1 Dong co (PUL=%d, DIR=%d, ENA=%d) | Toc do = %d XUNG/GIAY | LED: SANG XANH DUONG\n", 
                 STEP_PIN, DIR_PIN, ENA_PIN, speedHz);
   Serial.println(">> Nhap so buoc (vd: 1600 hoac RUN) de bat dau quay:\n");
 }
@@ -210,7 +237,8 @@ void loop() {
       remainingSteps--;
       if (remainingSteps <= 0) {
         isRunning = false;
-        Serial.printf("\n🎉 [HOAN THANH] Da quay dung %ld buoc! Dong co da tu dong dung.\n\n", targetSteps);
+        setLedColor(255, 0, 255); // Màu Tím/Hồng khi chạy hoàn thành số bước
+        Serial.printf("\n🎉 [HOAN THANH] Da quay dung %ld buoc! Dong co da tu dong dung. (LED: Tim)\n\n", targetSteps);
       }
     }
   } else {

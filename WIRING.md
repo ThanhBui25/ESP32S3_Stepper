@@ -55,20 +55,20 @@ Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode)** ch
 
 ---
 
-## 4. Bảng Lệnh Điều khiển qua Serial Monitor (Baud: 115200)
+## 4. Bảng Lệnh Điều khiển qua Serial Monitor & Trạng thái Màu Đèn LED RGB
 
-Mở Serial Monitor trên máy tính (baud 115200) và gửi các lệnh sau để điều khiển động cơ trong thời gian thực:
+Mở Serial Monitor trên máy tính (baud 115200) và gửi các lệnh sau:
 
-| Lệnh nhập | Ý nghĩa | Ví dụ |
-| :--- | :--- | :--- |
-| **`SPEED <xung/giây>`** | Đổi tốc độ trực tiếp theo **XUNG TRÊN GIÂY (Hz)** | Gõ `SPEED 1600` (1600 xung/s), `SPEED 800`, `SPEED 3200` |
-| **`1600`** hoặc **`STEP 1600`** | Chạy đúng số bước rồi **TỰ ĐỘNG DỪNG** | Gõ `1600` (chạy 1600 bước rồi dừng), `3200` (chạy 3200 bước) |
-| **`F`** hoặc **`THUAN`** | Chọn chiều quay thuận (Forward) | Gõ `F` |
-| **`R`** hoặc **`NGUOC`** | Chọn chiều quay ngược (Reverse) | Gõ `R` |
-| **`D`** hoặc **`DAO`** | Tự động đảo chiều quay | Gõ `D` |
-| **`CONT`** hoặc **`RUN`** | Quay LIÊN TỤC theo tốc độ xung/giây đã cài | Gõ `CONT` hoặc `RUN` |
-| **`STOP`** hoặc **`DUNG`** | Dừng khẩn cấp động cơ (trục vẫn khóa) | Gõ `STOP` |
-| **`HELP`** hoặc **`?`** | Xem lại bảng menu hướng dẫn | Gõ `HELP` |
+| Lệnh nhập | Ý nghĩa | Màu Đèn LED RGB trên ESP32 | Ví dụ |
+| :--- | :--- | :---: | :--- |
+| **`1600`** hoặc **`STEP 1600`** | Chạy đúng số bước rồi **TỰ ĐỘNG DỪNG** | 🩵 **Xanh ngọc (Cyan)** $\rightarrow$ 🟣 **Tím khi xong** | Gõ `1600` (chạy 1600 bước rồi dừng), `3200` |
+| **`CONT`** hoặc **`RUN`** | Quay LIÊN TỤC theo tốc độ xung/giây | 🟢 **Xanh lá cây (Green)** | Gõ `RUN` hoặc `CONT` |
+| **`STOP`** hoặc **`DUNG`** | Dừng khẩn cấp động cơ (khóa trục) | 🔴 **Đỏ (Red)** | Gõ `STOP` |
+| **`SPEED <xung/giây>`** | Đổi tốc độ trực tiếp (Xung/s) | 🩵 **Xanh lam (Sky Blue)** | Gõ `SPEED 1600`, `SPEED 800` |
+| **`F`** hoặc **`THUAN`** | Quay theo chiều THUẬN | 🟡 **Vàng (Yellow)** | Gõ `F` |
+| **`R`** hoặc **`NGUOC`** | Quay theo chiều NGƯỢC | 🟠 **Cam (Orange)** | Gõ `R` |
+| **`D`** hoặc **`DAO`** | Đảo chiều quay | ⚪ **Trắng (White)** | Gõ `D` |
+| **`HELP`** hoặc **`?`** | Xem lại bảng menu hướng dẫn | ⚪ **Trắng (White)** | Gõ `HELP` |
 
 ---
 
