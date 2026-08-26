@@ -3,3 +3,16 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+
+# Agent Rules & Skills
+.agents/
+AGENTS.md
+Agent.md
+
+# Non-project & Personal docx files
+*.docx
+convert_md_to_docx.py
+download_hardware_images.py
+generate_hardware_graphics.py
+generate_thiet_bi_docx.py
+images/
