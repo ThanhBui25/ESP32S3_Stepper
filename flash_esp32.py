@@ -12,46 +12,34 @@ if os.path.exists(pio_tool_path):
 import esptool
 from esptool.reset import USBJTAGSerialReset
 
-def find_esp32_device_path():
-    """Find the physical ESP32-S3 USB CDC Device Interface path"""
-    try:
-        k = winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE,
-            r'SYSTEM\CurrentControlSet\Control\DeviceClasses\{86e0d1e0-8089-11d0-9ce4-08003e301f73}'
-        )
-        count = winreg.QueryInfoKey(k)[0]
-        for i in range(count):
-            sub = winreg.EnumKey(k, i)
-            if 'VID_303A' in sub.upper() and 'PID_1001' in sub.upper():
-                # Convert registry entry ##?#... to \\?\...
-                path = r'\\?\\' + sub[4:]
-                return path
-    except Exception as e:
-        print(f"[ERROR] Could not query registry for ESP32 path: {e}")
+import serial.tools.list_ports
+
+def find_esp32_port():
+    """Find the active COM port for ESP32-S3 (VID: 303A, PID: 1001)"""
+    for p in serial.tools.list_ports.comports():
+        if (p.vid == 0x303A and p.pid == 0x1001) or "ESP32" in (p.description or "").upper() or "USB SERIAL" in (p.description or "").upper():
+            return p.device
+    for p in serial.tools.list_ports.comports():
+        if "COM" in p.device and p.device not in ("COM1", "COM2", "COM3", "COM4"):
+            return p.device
     return None
 
 def flash():
-    device_path = find_esp32_device_path()
-    if not device_path:
-        print("[ERROR] ESP32-S3 device not found in Windows device classes.")
+    port_to_use = find_esp32_port()
+    if not port_to_use:
+        print("[ERROR] ESP32-S3 device not found in COM ports.")
         sys.exit(1)
     
-    print(f"[INFO] Found ESP32-S3 hardware at: {device_path}")
+    print(f"[INFO] Found ESP32-S3 at port: {port_to_use}")
     print("[INFO] Putting ESP32-S3 into ROM Bootloader / Download Mode...")
 
     # Open serial and send USB-JTAG-Serial reset sequence into download mode
-    port_to_use = device_path
-    try:
-        s = serial.Serial(port_to_use, 115200, timeout=0.5, write_timeout=None)
-    except Exception:
-        port_to_use = 'COM10'
-        s = serial.Serial(port_to_use, 115200, timeout=0.5, write_timeout=None)
-
+    s = serial.Serial(port_to_use, 115200, timeout=0.5, write_timeout=None)
     reset_strat = USBJTAGSerialReset(s)
     reset_strat()
     time.sleep(0.3)
     s.close()
-    time.sleep(0.2)
+    time.sleep(0.3)
 
     build_dir = os.path.join(os.path.dirname(__file__), '.pio', 'build', 'esp32-s3-devkitc-1')
     bootloader_bin = os.path.join(build_dir, 'bootloader.bin')
