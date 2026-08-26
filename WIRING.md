@@ -69,6 +69,19 @@ Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode)** ch
 
 ---
 
+### E. Tín hiệu Màn hình LCD 20x4 Kèm Module I2C (PCF8574)
+
+| Chân trên Module I2C | Chân trên ESP32-S3 | Chức năng & Ghi chú |
+| :--- | :--- | :--- |
+| **`VCC`** | **`5V`** *(hoặc `VIN`)* | Nguồn dương nuôi LCD 20x4 (Bắt buộc dùng 5V để chữ hiển thị rõ nét) |
+| **`GND`** | **`GND`** | Nguồn âm Mass chung |
+| **`SDA`** | **`GPIO 8`** | Dữ liệu giao tiếp I2C Data |
+| **`SCL`** | **`GPIO 9`** | Xung đồng hồ giao tiếp I2C Clock |
+
+> 💡 **Lưu ý:** Nếu chữ bị mờ hoặc hiện các ô vuông đen, dùng tuốc nơ vít xoay nhẹ biến trở màu xanh dương ở mặt sau module I2C để tinh chỉnh độ tương phản (Contrast).
+
+---
+
 ## 3. Lưu ý Kỹ thuật về Tín hiệu Điều khiển 3.3V và Driver DM542E
 
 1. **Điện áp cách ly quang (Optocoupler Input) của DM542E:**

@@ -16,3 +16,4 @@ download_hardware_images.py
 generate_hardware_graphics.py
 generate_thiet_bi_docx.py
 images/
+update_winforms.py
