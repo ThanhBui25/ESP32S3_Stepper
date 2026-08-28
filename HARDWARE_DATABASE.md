@@ -9,10 +9,11 @@
 ## ⚡ CẤU HÌNH PHẦN CỨNG ĐANG HOẠT ĐỘNG TRONG DỰ ÁN (BASELINE HARDWARE)
 *(Mọi thiết bị mới thêm vào sẽ được tự động đối chiếu tương thích với cấu hình này)*:
 - **Vi điều khiển (MCU):** `ESP32-S3 DevKitC-1` (Mức Logic `3.3V`, cấp nguồn 5V USB/VIN).
-- **Driver Động cơ:** `Leadshine DM542E` (Đang đấu kiểu Common Anode 3.3V).
-- **Động cơ bước:** `42CM06-RD` (Động cơ bước 2 pha 4 dây, góc bước $1.8^\circ$, dòng định mức 2.5A).
-- **Nguồn cấp động lực:** `Mean Well LRS-100N2-24` (24VDC, 4.5A).
-- **Module hiển thị & phím bấm:** `TM1638` (8 LED đỏ, 8 LED 7 đoạn, 8 nút bấm, giao tiếp 3 chân DIO/CLK/STB).
+- **Driver Động cơ (x3):** `3x Leadshine DM542E` (Đang đấu kiểu Common Anode 3.3V, M1: GPIO 4/5/6, M2: GPIO 15/16/17, M3: GPIO 7/18/13).
+- **Động cơ bước (x3):** `3x 42CM06-RD` (Động cơ bước 2 pha 4 dây, góc bước $1.8^\circ$, dòng định mức 2.5A).
+- **Nguồn cấp động lực:** `Mean Well LRS-100N2-24` (24VDC, 4.5A, 108W - cấp song song cho 3 Driver).
+- **Module hiển thị & phím bấm:** `TM1638` (8 LED đỏ, 8 LED 7 đoạn, 8 nút bấm, giao tiếp 3 chân GPIO 10/11/12).
+- **Màn hình hiển thị:** `LCD 20x4 I2C` (Giao tiếp PCF8574 Fast I2C 400kHz, GPIO 8/9).
 
 ---
 
@@ -330,11 +331,247 @@ Dùng khi bạn muốn gắn thêm Encoder rời vào trục máy để MCU tự
 
 ---
 
-### 4.5. Động cơ DC Servo / BLDC Servo
+### 4.5. Động Cơ Servo Kỹ Thuật Số Tải Trọng Cực Đại RDS51150-270 (150kg.cm 270°)
 
-- Gồm các dòng: Động cơ DC chổi than có Encoder, Động cơ không chổi than (Brushless DC) kết hợp Cảm biến Hall + Encoder.
-- 🟢 **Driver tương thích:** Các bộ điều khiển Vector FOC như `ODrive v3.6/Pro`, `SimpleFOC Shield`, `VESC 6.0`, `MKS BASE FOC`.
-- 🔴 **CẤM:** Không dùng được bất kỳ driver động cơ bước nào (DM542, TB6600, CL57T) cho loại động cơ này.
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Động cơ Servo kỹ thuật số công suất lớn (Digital Heavy Duty Robot Servo Motor).
+- **Mô-men xoắn Stall Torque:** Cực đại **`150 kg.cm`** ($15\text{ N.m}$) tại $12\text{V} - 24\text{V}$.
+- **Góc quay điều khiển:** **`270°`** (xung PWM $50\text{Hz}$, độ rộng xung $500\mu\text{s} - 2500\mu\text{s}$).
+- **Điện áp cấp nguồn (VCC):** `12V - 24V DC` (Nguồn điện động lực riêng).
+- **Mức điện áp Logic Tín hiệu PWM:** `3.3V - 5.0V DC`.
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** Tín hiệu điều khiển PWM $3.3\text{V}$ chấp nhận trực tiếp từ chân GPIO PWM của ESP32-S3.
+- ⛔ **CẢNH BÁO AN TOÀN SỐNG CÒN:** Dòng điện tiêu thụ đỉnh (Stall Current) khi khởi động hoặc kẹt tải lên tới `5A - 8A`. **TUYỆT ĐỐI KHÔNG CẤP NGUỒN CHO SERVO RDS51150 TỪ CHÂN 5V / 3.3V CỦA ESP32-S3 HOẶC RASPBERRY PI 4** (sẽ làm cháy ngay chân cắm vi điều khiển hoặc sụt áp sập nguồn MCU liên tục). Bắt buộc lấy nguồn $12\text{V}/24\text{V}$ từ bộ nguồn Mean Well nuôi riêng và **NỐI CHUNG MASS GND** với ESP32-S3.
+
+#### C. Sơ đồ Đấu nối Cáp 3 Dây:
+- `Dây Đỏ (VCC)` ---> `Cọc +12V / +24V Nguồn Mean Well` (Không nối ESP32)
+- `Dây Đen/Nâu (GND)` ---> `Cọc COM (0V) Nguồn Mean Well` + `Nối chung GND ESP32-S3`
+- `Dây Trắng/Vàng (PWM)` ---> `ESP32-S3 GPIO 4 / 5 / 6 / 7` (Chân ngõ ra PWM)
+
+---
+
+### 4.6. Cảm biến Định Vị Băng Tần Siêu Rộng UWB (Decawave DW1000 / DW3000)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Cảm biến định vị & đo khoảng cách không dây Ultra-Wideband (ToF / Two-Way Ranging).
+- **Điện áp Logic:** `3.3V DC` (VDD = 2.8V - 3.6V).
+- **Điện áp cấp nguồn (VCC):** `3.3V DC` (Tối đa `3.6V`).
+- **Dòng điện làm việc:** Dòng đỉnh khi phát RF `~100mA - 160mA`.
+- **Chuẩn giao tiếp:** SPI tốc độ cao (Clock up to `20MHz`).
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** ESP32-S3 hoạt động ở mức logic 3.3V $\rightarrow$ Nối trực tiếp các chân SPI, CS, IRQ, RST mà không cần Level Shifter.
+- ⛔ **CẢNH BÁO QUAN TRỌNG:** Tuyệt đối **KHÔNG** cấp nguồn 5V vào chân VCC (gây cháy chip ngay lập tức). Bắt buộc đấu nối tụ hóa `100uF` song song tụ gốm `0.1uF` ngay sát chân VCC/GND để lọc sụt áp dòng đỉnh khi phát sóng.
+
+#### C. Sơ đồ Đấu nối Khuyên dùng với ESP32-S3:
+- `UWB VCC` ---> `ESP32-S3 3.3V` (Kèm tụ bù 100uF)
+- `UWB GND` ---> `ESP32-S3 GND`
+- `UWB MOSI` ---> `ESP32-S3 GPIO 11` (SPI MOSI)
+- `UWB MISO` ---> `ESP32-S3 GPIO 13` (SPI MISO)
+- `UWB SCK` ---> `ESP32-S3 GPIO 12` (SPI SCK)
+- `UWB CS` ---> `ESP32-S3 GPIO 10` (SPI CS)
+- `UWB IRQ` ---> `ESP32-S3 GPIO 4` (Hardware Interrupt)
+- `UWB RST` ---> `ESP32-S3 GPIO 5` (Hardware Reset)
+
+---
+
+### 4.7. Cảm biến Từ Trường 3 Trục / La Bàn Điện Tử BMM150 (Bosch Sensortec)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Cảm biến từ trường 3 trục (3-axis Geomagnetic Sensor / Magnetometer FlipCore).
+- **Điện áp Logic (VDDIO):** `1.2V - 3.6V` (Chuẩn `3.3V DC`).
+- **Điện áp cấp nguồn (VDD):** `1.62V - 3.6V` (Chuẩn `3.3V DC`).
+- **Chuẩn giao tiếp:** $I^2C$ Fast Mode (`400kHz`, địa chỉ mặc định `0x10`) hoặc SPI.
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** Tương thích hoàn toàn mức logic 3.3V của ESP32-S3.
+- 🟢 **KHÔNG XUNG ĐỘT I2C:** Địa chỉ $I^2C$ `0x10` khác hoàn toàn địa chỉ màn hình LCD 20x4 PCF8574 (`0x27` / `0x3F`), cho phép đấu chung bus $I^2C$ (GPIO 8 & GPIO 9).
+
+#### C. Sơ đồ Đấu nối Khuyên dùng với ESP32-S3:
+- `BMM150 VCC` ---> `ESP32-S3 3.3V`
+- `BMM150 GND` ---> `ESP32-S3 GND`
+- `BMM150 SDA` ---> `ESP32-S3 GPIO 8` (Chung bus I2C với LCD 20x4)
+- `BMM150 SCL` ---> `ESP32-S3 GPIO 9` (Chung bus I2C với LCD 20x4)
+- `BMM150 DRDY` ---> `ESP32-S3 GPIO 4` (Tùy chọn ngắt Data Ready)
+
+#### D. Cảnh báo & Lưu ý Đặc thù:
+- ⚠️ Bắt buộc phải chạy chương trình **Hiệu chuẩn la bàn (Hard-Iron / Soft-Iron Calibration)** trước khi dùng để xóa nhiễu từ trường do môi trường kim loại xung quanh.
+- ⚠️ Lắp đặt cảm biến cách xa tối thiểu `10cm - 15cm` so với động cơ bước 42CM06, driver DM542E/BH57 và nguồn Mean Well 24V.
+
+---
+
+### 4.8. Module Radar mmWave Theo Dõi Mục Tiêu LD2450 (Hilink 24GHz)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Cảm biến Radar sóng milimet 24GHz (mmWave Motion Tracking Radar).
+- **Điện áp cấp nguồn (VCC):** `5V DC` (Dòng làm việc ~80mA).
+- **Điện áp Logic (UART):** `3.3V DC`.
+- **Chuẩn giao tiếp:** UART (Baudrate `256000 bps`).
+- **Tầm đo & Góc quét:** Bán kính đến `6m`, góc mở `60°` (theo dõi tối đa 3 mục tiêu cùng lúc).
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** Tín hiệu UART TX/RX ở mức 3.3V $\rightarrow$ Nối trực tiếp vào các chân GPIO UART của ESP32-S3 (như GPIO 17 & 18).
+
+#### C. Sơ đồ Đấu nối Khuyên dùng:
+- `LD2450 VCC` ---> `ESP32-S3 5V / VIN`
+- `LD2450 GND` ---> `ESP32-S3 GND`
+- `LD2450 TX` ---> `ESP32-S3 GPIO 18` (RXD2)
+- `LD2450 RX` ---> `ESP32-S3 GPIO 17` (TXD2)
+
+---
+
+### 4.9. Cảm Biến Khoảng Cách Laser ToF Ma Trận 8x8 VL53L8CX (STMicroelectronics)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Cảm biến khoảng cách Laser Time-of-Flight (ToF) đa vùng 8x8 zones (64 điểm đo độc lập).
+- **Điện áp Logic:** `3.3V DC` ($1.8\text{V} - 3.3\text{V}$).
+- **Chuẩn giao tiếp:** $I^2C$ Fast Mode+ (`1MHz`, địa chỉ `0x52`) hoặc SPI (`3MHz`).
+- **Phạm vi đo & Tần số:** Khoảng cách tới `4m`, góc mở `45° x 45°`, tần số quét up to `60Hz`.
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** Hoàn toàn đồng bộ mức logic 3.3V. Đấu song song bus $I^2C$ (GPIO 8/9).
+
+#### C. Sơ đồ Đấu nối Khuyên dùng:
+- `VL53L8CX VCC` ---> `ESP32-S3 3.3V` (hoặc 5V trên breakout board)
+- `VL53L8CX GND` ---> `ESP32-S3 GND`
+- `VL53L8CX SDA` ---> `ESP32-S3 GPIO 8` (I2C SDA)
+- `VL53L8CX SCL` ---> `ESP32-S3 GPIO 9` (I2C SCL)
+- `VL53L8CX INT` ---> `ESP32-S3 GPIO 4` (Data Ready Interrupt)
+
+---
+
+### 4.10. Cảm Biến Quét Bản Đồ Laser 2D LiDAR Xoay 360° (RPLIDAR / LD19)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Cảm biến quét Laser 2D xoay 360 độ (2D LiDAR Scanner cho SLAM & Navigation).
+- **Điện áp cấp nguồn (VCC & Motor):** `5V DC` (Dòng khởi động `~600mA`, dòng chạy `~300-500mA`).
+- **Điện áp Logic:** `3.3V DC` (UART).
+- **Chuẩn giao tiếp:** UART (`115200 bps` / `230400 bps`) + Xung PWM điều khiển Motor.
+- **Tốc độ & Phạm vi:** Bán kính `8m - 12m`, tần số lấy mẫu `2000 - 4500 điểm/giây`, tốc độ xoay `5 - 10Hz`.
+
+#### B. Khả năng Tương thích với Raspberry Pi 4 / ESP32-S3:
+- 🟢 **RẤT TỐT:** Thường ghép nối với Raspberry Pi 4 (Master Controller) chạy hệ điều hành ROS/ROS2 để dựng bản đồ SLAM.
+
+#### C. Sơ đồ Đấu nối Khuyên dùng với Raspberry Pi 4:
+- `LiDAR 5V` ---> `Cọc 5V Nguồn Mean Well LRS-50-5` (Không lấy từ mạch nạp yếu)
+- `LiDAR GND` ---> `Cọc COM (GND) Nguồn Mean Well`
+- `LiDAR TX` ---> `Raspberry Pi 4 Pin 10 (GPIO 15 / RXD)`
+- `LiDAR RX` ---> `Raspberry Pi 4 Pin 8 (GPIO 14 / TXD)`
+- `LiDAR M_EN / PWM` ---> `Raspberry Pi 4 Pin 12 (GPIO 18 / PWM)`
+
+---
+
+### 4.11. Cảm Biến Hành Trình Từ Tính / Công Tắc Hall A3144 (Allegro)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Cảm biến công tắc hiệu ứng Hall đơn cực (Unipolar Hall Effect Switch Sensor).
+- **Điện áp hoạt động (VCC):** `3.3V - 24V DC`.
+- **Dạng ngõ ra:** **NPN Open-Collector** (Cực thu hở).
+- **Tần số chuyển mạch:** Max `100 kHz`.
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** Nối cực thu hở với điện trở Pull-up $10k\Omega$ kéo lên 3.3V.
+
+#### C. Sơ đồ Đấu nối Khuyên dùng:
+- `A3144 VCC (Chân 1)` ---> `ESP32-S3 3.3V`
+- `A3144 GND (Chân 2)` ---> `ESP32-S3 GND`
+- `A3144 OUT (Chân 3)` ---> `ESP32-S3 GPIO 4 / 7 / 14` + `Trở Pull-up 10kΩ lên 3.3V`
+
+---
+
+### 4.12. Module Truyền Thông LoRa Sub-GHz (SX1278 / Ra-02 / SX1262)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Module truyền thông radio không dây tầm xa Sub-GHz (433MHz / 868MHz / 915MHz).
+- **Điện áp hoạt động (VCC):** `3.3V DC` (VDD = 1.8V - 3.7V).
+- **Mức điện áp Logic:** `3.3V DC`.
+- **Chuẩn giao tiếp:** SPI tốc độ cao + Chân ngắt hardware `DIO0` + `RST`.
+- **Tầm truyền xa:** `1km` đến `10km` (tùy Ăng-ten và môi trường).
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** Đồng bộ hoàn hảo mức 3.3V Logic.
+- ⛔ **CẢNH BÁO SỐNG CÒN:** Tuyệt đối **KHÔNG** bật nguồn phát lệnh LoRa khi chưa cắm Ăng-ten (Antenna) vì sóng RF phản hồi sẽ gây cháy mạch PA công suất của chip SX1278.
+
+#### C. Sơ đồ Đấu nối Khuyên dùng:
+- `LoRa VCC` ---> `ESP32-S3 3.3V` (Nối thêm tụ 47uF)
+- `LoRa GND` ---> `ESP32-S3 GND`
+- `LoRa MOSI / MISO / SCK / CS` ---> `GPIO 11, 13, 12, 10`
+- `LoRa DIO0` ---> `ESP32-S3 GPIO 4` (Interrupt)
+- `LoRa RST` ---> `ESP32-S3 GPIO 5` (Hardware Reset)
+
+---
+
+### 4.13. Module Mạng Mesh Zigbee / IEEE 802.15.4 (CC2530 / E18-MS1)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Module truyền thông mạng Mesh không dây 2.4GHz chuẩn IEEE 802.15.4.
+- **Điện áp hoạt động (VCC):** `2.0V - 3.6V` (Chuẩn `3.3V DC`).
+- **Chuẩn giao tiếp:** UART (`TX`, `RX`, Baudrate mặc định `115200 bps`).
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** Nối trực tiếp ngõ UART TX/RX 3.3V sang ESP32-S3 mà không cần Level Shifter.
+
+#### C. Sơ đồ Đấu nối Khuyên dùng:
+- `Zigbee VCC` ---> `ESP32-S3 3.3V`
+- `Zigbee GND` ---> `ESP32-S3 GND`
+- `Zigbee TX` ---> `ESP32-S3 GPIO 18` (RXD2)
+- `Zigbee RX` ---> `ESP32-S3 GPIO 17` (TXD2)
+
+---
+
+### 4.14. Transceiver RF 2.4GHz nRF24L01+PA+LNA (Nordic Semi)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Module thu phát vô tuyến 2.4GHz tốc độ cao (250kbps, 1Mbps, 2Mbps).
+- **Điện áp cấp nguồn (VCC):** `1.9V - 3.6V DC` (Chuẩn `3.3V DC` - **CẤM CẤP 5V**).
+- **Điện áp Logic I/O:** `5V Tolerant` (Chịu áp 5V trên các chân SPI/CE/CSN).
+- **Tầm xa:** `100m` đến `1km` (bản PA+LNA).
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** Giao tiếp SPI phần cứng với ESP32-S3.
+- ⛔ **CẢNH BÁO QUAN TRỌNG:** Cấm cấp 5V vào VCC (gây cháy chip ngay lập tức). Hàn tụ 10uF + 0.1uF trực tiếp lên 2 chân VCC/GND module để chống sụt áp nguồn.
+
+#### C. Sơ đồ Đấu nối Khuyên dùng:
+- `nRF24 VCC` ---> `ESP32-S3 3.3V` (Kèm tụ 10uF sát chân)
+- `nRF24 GND` ---> `ESP32-S3 GND`
+- `nRF24 CE / CSN` ---> `ESP32-S3 GPIO 6 / GPIO 10`
+- `nRF24 SCK / MOSI / MISO` ---> `ESP32-S3 GPIO 12 / 11 / 13`
+
+---
+
+### 4.15. Module Bluetooth 5.0 / BLE Mesh nRF52 Series (nRF52840 / nRF52832)
+
+#### A. Thông số Kỹ thuật:
+- **Loại thiết bị:** Vi điều khiển & Module giao tiếp Bluetooth Low Energy 5.0 / BLE Mesh / Thread 2.4GHz.
+- **Điện áp hoạt động:** `1.7V - 3.6V DC` (Chuẩn `3.3V DC`).
+- **Chuẩn giao tiếp:** UART AT-Command / Pass-through Transparent Bridge.
+
+#### B. Khả năng Tương thích với ESP32-S3:
+- 🟢 **RẤT TỐT:** Đồng bộ hoàn toàn mức logic 3.3V. Cầu nối UART nối tiếp với ESP32-S3.
+
+---
+
+### 4.16. Giao Thức Mạng Wi-Fi Không Dây (TCP, UDP, Unicast, Multicast Socket)
+
+#### A. Thông số Kỹ thuật:
+- **Loại giao thức:** Chuẩn truyền thông mạng LAN không dây IEEE 802.11 b/g/n (tần số 2.4GHz).
+- **Hỗ trợ chế độ mạng:** Wi-Fi Station (STA), Access Point (AP), Dual AP+STA mode.
+- **Phân loại Socket điều khiển:**
+  - `TCP Socket`: Đảm bảo tin cậy 100%, có ACK, độ trễ 10-50ms (Dùng cho lệnh RUN, STOP, Web Server HMI).
+  - `UDP Datagram`: Tốc độ cực nhanh, trễ < 5ms (Dùng cho dòng dữ liệu cảm biến & Joystick).
+  - `Wi-Fi Unicast`: Gửi đích danh 1 địa chỉ IP thiết bị.
+  - `Wi-Fi Multicast (IGMP)`: Phát đồng thời nhóm IP (`239.x.x.x`) để điều khiển đồng bộ hàng loạt vi điều khiển.
+
+---
+
+### 4.17. Giao Thức Truyền Không Dây Trực Tiếp ESP-NOW (Espressif Peer-to-Peer)
+
+#### A. Thông số Kỹ thuật:
+- **Loại giao thức:** Giao thức không dây độc quyền Espressif P2P dựa trên khung IEEE 802.11 Action frame.
+- **Tốc độ & Độ trễ:** Trễ siêu thấp `< 10ms`, truyền trực tiếp không qua Router Wi-Fi.
+- **Dung lượng Payload:** Tối đa `250 Bytes` / gói tin.
+- **Bảo mật:** Mã hóa phần cứng **AES-128**.
 
 ---
 

@@ -10,15 +10,17 @@ if hasattr(sys.stdin, 'reconfigure'):
     sys.stdin.reconfigure(encoding='utf-8', errors='replace')
 
 def get_available_port():
+    for p in serial.tools.list_ports.comports():
+        if (p.vid == 0x1A86 and p.pid == 0x55D3) or (p.vid == 0x303A and p.pid == 0x1001) or "CH343" in (p.description or "").upper() or "ESP32" in (p.description or "").upper():
+            return p.device
     ports = [p.device for p in serial.tools.list_ports.comports()]
+    if 'COM7' in ports:
+        return 'COM7'
     if 'COM10' in ports:
         return 'COM10'
-    for p in serial.tools.list_ports.comports():
-        if '1001' in (p.hwid or '') or '303A' in (p.hwid or ''):
-            return p.device
     if 'COM5' in ports:
         return 'COM5'
-    return 'COM10'
+    return ports[0] if ports else 'COM7'
 
 def main():
     port = get_available_port()

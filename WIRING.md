@@ -1,29 +1,55 @@
-# Sơ đồ và Hướng dẫn Đấu dây (WIRING GUIDE)
+# Sơ đồ và Hướng dẫn Đấu dây (TRIPLE MOTOR WIRING GUIDE - 3 TRỤC)
 
-## 1. Danh sách Thiết bị Phần cứng
+## 1. Danh sách Thiết bị & Vai trò Hệ thống
 - **Vi điều khiển**: ESP32-S3 DevKitC-1 (Logic 3.3V)
-- **Driver Động cơ bước**: Leadshine DM542E
-- **Động cơ bước (Stepper Motor)**: 42CM06-RD (4 dây, bước 1.8°)
-- **Nguồn cấp công suất**: Mean Well LRS-100N2-24 (24VDC, ~4.5A)
+- **MOTOR 1 (TRỤC CHÍNH / MASTER)**: Driver Leadshine DM542E + Motor 42CM06-RD (PUL=GPIO 4, DIR=GPIO 5, ENA=GPIO 6).
+- **MOTOR 2 (TRỤC PHỤ 1 / SLAVE 1)**: Driver Leadshine DM542E + Motor 42CM06-RD (PUL=GPIO 15, DIR=GPIO 16, ENA=GPIO 17).
+- **MOTOR 3 (TRỤC PHỤ 2 / SLAVE 2)**: Driver Leadshine DM542E + Motor 42CM06-RD (PUL=GPIO 7, DIR=GPIO 18, ENA=GPIO 13).
+- **Nguồn cấp công suất**: Mean Well LRS-100N2-24 (24VDC, ~4.5A, 108W cấp song song cho 3 Driver).
+- **Module Bàn phím & LED**: TM1638 (8 phím nhấn, 8 LED 7 đoạn, 8 LED đỏ).
+- **Màn hình hiển thị**: LCD 20x4 kèm Module I2C PCF8574.
 
 ---
 
 ## 2. Sơ đồ Đấu dây Chi tiết
 
-### A. Nguồn công suất 24V (Mean Well LRS-100N2-24 -> Driver DM542E)
-| Nguồn LRS-100N2-24 | Driver Leadshine DM542E | Chức năng | Ghi chú |
-| :--- | :--- | :--- | :--- |
-| **V+** (+24VDC) | **+V** | Cấp nguồn dương động lực | Dây đỏ / tiết diện ≥ 0.75mm² |
-| **V-** (0VDC / COM) | **GND** | Nguồn âm động lực | Dây đen / tiết diện ≥ 0.75mm² |
+### A. Nguồn công suất 24V (Mean Well LRS-100N2-24 -> 3 Driver DM542E)
+Đấu nguồn 24V song song từ bộ nguồn Mean Well tới cả 3 Driver DM542E:
 
-> ⚠️ **CẢNH BÁO QUAN TRỌNG VỀ ĐIỆN ÁP:**
+| Nguồn LRS-100N2-24 | Driver 1 (DM542E - M1) | Driver 2 (DM542E - M2) | Driver 3 (DM542E - M3) | Chức năng | Tiết diện dây |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **V+** (+24VDC) | **+V** | **+V** | **+V** | Nguồn dương động lực 24V | Dây đỏ $\ge 0.75\text{mm}^2$ |
+| **V-** (0VDC / COM) | **GND** | **GND** | **GND** | Nguồn âm Mass động lực 0V | Dây đen $\ge 0.75\text{mm}^2$ |
+
+> ⚠️ **CẢNH BÁO NGUY HIỂM VỀ ĐIỆN ÁP:**
 > - Tuyệt đối **KHÔNG ĐƯỢC** nối nguồn 24V vào bất kỳ chân nào của ESP32-S3.
-> - ESP32-S3 chỉ hoạt động ở mức điện áp **3.3V**. Điện áp vượt quá 3.3V sẽ làm cháy vi điều khiển ngay lập tức.
+> - ESP32-S3 chỉ hoạt động ở mức điện áp **3.3V**.
 
 ---
 
-### B. Đấu dây Động cơ bước 42CM06-RD -> Driver DM542E
-| Màu dây động cơ 42CM06-RD | Chân trên DM542E | Pha động cơ |
+### B. Tín hiệu Điều khiển Logic: ESP32-S3 $\rightarrow$ 3 Driver DM542E
+Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode 3.3V)**:
+
+| Chân ESP32-S3 | Driver 1 (Motor 1) | Driver 2 (Motor 2) | Driver 3 (Motor 3) | Chức năng | Mô tả tín hiệu |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **3.3V** | **PUL1+ / DIR1+** | **PUL2+ / DIR2+** | **PUL3+ / DIR3+** | Dương Chung | Nối chung tất cả chân dương vào **3.3V** của ESP32 |
+| **GPIO 4** | **PUL1-** | - | - | Xung bước Motor 1 | Kéo LOW kích xung M1 |
+| **GPIO 5** | **DIR1-** | - | - | Chiều quay Motor 1 | HIGH/LOW đảo chiều M1 |
+| **GPIO 6** | **ENA1-** | - | - | Enable Driver 1 | *(Có thể bỏ trống)* |
+| **GPIO 15** | - | **PUL2-** | - | Xung bước Motor 2 | Kéo LOW kích xung M2 |
+| **GPIO 16** | - | **DIR2-** | - | Chiều quay Motor 2 | HIGH/LOW đảo chiều M2 |
+| **GPIO 17** | - | **ENA2-** | - | Enable Driver 2 | *(Có thể bỏ trống)* |
+| **GPIO 7** | - | - | **PUL3-** | Xung bước Motor 3 | Kéo LOW kích xung M3 |
+| **GPIO 18** | - | - | **DIR3-** | Chiều quay Motor 3 | HIGH/LOW đảo chiều M3 |
+| **GPIO 13** | - | - | **ENA3-** | Enable Driver 3 | *(Có thể bỏ trống)* |
+
+> 💡 **Mẹo:** Các chân `ENA-` và `ENA+` trên cả 3 driver có thể **RÚT RA BỎ TRỐNG**, Driver sẽ luôn luôn ở trạng thái kích hoạt (Enable) ổn định nhất.
+
+---
+
+### C. Đấu dây 3 Động cơ bước 42CM06-RD $\rightarrow$ 3 Driver DM542E
+
+| Màu dây động cơ 42CM06-RD | Chân trên Driver tương ứng | Pha động cơ |
 | :--- | :--- | :--- |
 | **Đen (Black)** | **A+** | Cuộn dây Pha A (+) |
 | **Xanh lá (Green)** | **A-** | Cuộn dây Pha A (-) |
@@ -32,90 +58,89 @@
 
 ---
 
-### C. Tín hiệu Điều khiển Logic (ESP32-S3 -> Driver DM542E)
-Hệ thống sử dụng kiểu đấu **Cực Dương Chung (Common Anode)** cho **1 Động cơ bước**:
+### D. Tín hiệu Module TM1638 & LCD 20x4 I2C
 
-| Chân ESP32-S3 | Chân Driver DM542E | Chức năng | Mô tả tín hiệu |
+| Thiết bị | Chân thiết bị | Chân ESP32-S3 | Chức năng |
 | :--- | :--- | :--- | :--- |
-| **3.3V (Nguồn Dương)** | **PUL+ / DIR+ / ENA+** | Nối Dương Chung | Nối chung 3 chân dương lại và cắm vào chân **3.3V** của ESP32-S3 |
-| **GPIO 4** | **PUL-** | Xung bước (STEP/PUL) | Kéo LOW để kích xung quay |
-| **GPIO 5** | **DIR-** | Chiều quay (DIR) | HIGH/LOW để đổi chiều quay |
-| **GPIO 6** | **ENA-** | Bật/Tắt Driver (ENABLE) | HIGH = Bật Driver, LOW = Thả tự do (hoặc bỏ trống không cắm) |
+| **TM1638** | `VCC` / `GND` | `3.3V` / `GND` | Nguồn nuôi module phím |
+| | `STB` / `CLK` / `DIO` | `GPIO 10` / `GPIO 11` / `GPIO 12` | Giao tiếp 3 dây |
+| **LCD 20x4 I2C** | `VCC` / `GND` | `5V` (hoặc `VIN`) / `GND` | Nguồn nuôi LCD (5V nét chữ) |
+| | `SDA` / `SCL` | `GPIO 8` / `GPIO 9` | I2C Fast 400kHz |
 
 ---
 
-### D. Tín hiệu Module Bàn phím & Màn hình TM1638 (LED & KEY)
+### E. Cài đặt Switch DIP trên 3 Driver DM542E
+- **SW1=ON, SW2=OFF, SW3=ON:** Cài dòng định mức 2.0A - 2.5A.
+- **SW4=OFF:** Giảm 50% dòng khi dừng (Half Current) để mát động cơ.
+- **SW5=ON, SW6=ON, SW7=OFF, SW8=ON:** Vi bước 1600 xung/vòng.
 
-| Chân trên TM1638 | Chân trên ESP32-S3 | Chức năng |
+---
+
+## 3. Bảng Lệnh Điều khiển (Serial / Monitor / Web / TM1638)
+
+| Lệnh / Phím | Ý nghĩa | Hành động chi tiết |
 | :--- | :--- | :--- |
-| **`VCC`** | **`3.3V`** *(hoặc 5V)* | Nguồn dương nuôi mạch |
-| **`GND`** | **`GND`** | Nguồn âm đất |
-| **`STB`** | **`GPIO 10`** | Chân chọn chip Strobe |
-| **`CLK`** | **`GPIO 11`** | Chân xung đồng hồ Clock |
-| **`DIO`** | **`GPIO 12`** | Chân dữ liệu 2 chiều Data I/O |
-
-#### Bảng Chức Năng 8 Đèn LED Đỏ ($D_1 \rightarrow D_8$) & 8 Nút Bấm ($S_1 \rightarrow S_8$):
-
-| Cặp Nút & LED | Chức năng Nút bấm | Trạng thái Đèn LED Đỏ hiển thị |
-| :---: | :--- | :--- |
-| **`S1` / `D1`** | Bấm quay **1 VÒNG** ($8000$ bước) | **`D1` sáng duy nhất** khi đang quay 1 vòng (xong tự tắt) |
-| **`S2` / `D2`** | Bấm quay **2 VÒNG** ($16000$ bước) | **`D2` sáng duy nhất** khi đang quay 2 vòng (xong tự tắt) |
-| **`S3` / `D3`** | Bấm quay **90 ĐỘ** ($2000$ bước) | **`D3` sáng duy nhất** khi đang quay 90 độ (xong tự tắt) |
-| **`S4` / `D4`** | Bấm **ĐẢO CHIỀU** (Thuận / Ngược) | **`D4` sáng** khi Chiều Thuận (F), **`D4` tắt** khi Chiều Ngược (R) |
-| **`S5` / `D5`** | Bấm **TĂNG TỐC** ($+200\text{ Hz}$) | **`D5` chớp sáng** xác nhận vừa tăng tốc độ |
-| **`S6` / `D6`** | Bấm **GIẢM TỐC** ($-200\text{ Hz}$) | **`D6` chớp sáng** xác nhận vừa giảm tốc độ |
-| **`S7` / `D7`** | Bấm quay **LIÊN TỤC (`RUN`)** | **`D7` sáng duy nhất** trong suốt quá trình quay liên tục |
-| **`S8` / `D8`** | Bấm **DỪNG KHẨN CẤP (`STOP`)** | **`D8` sáng duy nhất** khi động cơ đang ở trạng thái DỪNG |
+| **BẤM GIỮ `[S1]`** / **`TIEN`** | **TIẾN LÊN (JOG)** | **Motor 1 ĐỨNG YÊN**, **Motor 2 quay NGƯỢC (CCW)** & **Motor 3 quay THUẬN (CW)**. Nhả tay dừng ngay! |
+| **BẤM GIỮ `[S2]`** / **`LUI`** | **LÙI LẠI (JOG)** | **Motor 1 ĐỨNG YÊN**, **Motor 2 quay THUẬN (CW)** & **Motor 3 quay NGƯỢC (CCW)**. Nhả tay dừng ngay! |
+| **BẤM GIỮ `[S3]`** / **`XOAY THUAN`** | **XOAY TẠI CHỖ THUẬN** | **Cả 3 Motor (M1, M2, M3)** cùng quay **CHIỀU THUẬN (CW)**. Nhả tay dừng ngay! |
+| **BẤM GIỮ `[S4]`** / **`XOAY NGUOC`** | **XOAY TẠI CHỖ NGƯỢC** | **Cả 3 Motor (M1, M2, M3)** cùng quay **CHIỀU NGƯỢC (CCW)**. Nhả tay dừng ngay! |
+| **BẤM GIỮ `[S5]`** / **`PHAI`** | **CHẠY SANG PHẢI** | **M1 (Tốc độ x2 CW)**, **M2 quay CW**, **M3 quay CCW**. Nhả tay dừng ngay! |
+| **BẤM GIỮ `[S6]`** / **`TRAI`** | **CHẠY SANG TRÁI** | **M1 (Tốc độ x2 CCW)**, **M2 quay CCW**, **M3 quay CW**. Nhả tay dừng ngay! |
+| **BẤM/GIỮ `[S7]`** / **`SPEED +`** | **TĂNG TỐC ĐỘ** | Tăng **+100 Hz** mỗi lần bấm (Bấm giữ tự động tăng liên tục). |
+| **BẤM/GIỮ `[S8]`** / **`SPEED -`** | **GIẢM TỐC ĐỘ** | Giảm **-100 Hz** mỗi lần bấm (Bấm giữ tự động giảm liên tục). |
+| **`1600`** / **`STEP 1600`** | Chạy 1600 bước | **Cả 3 Motor** (Trục chính kéo theo 2 trục phụ) |
+| **`RUN`** / **`STOP`** | Chạy liên tục / Dừng | **Cả 3 Motor** |
+| **`SPEED 4000`** | Đổi tốc độ | Đổi tốc độ cả 3 motor |
+| **`M1 <lệnh>`** / **`MAIN <lệnh>`** | Điều khiển riêng Trục Chính | **Chỉ Motor 1** |
+| **`M2 <lệnh>`** / **`SUB1 <lệnh>`** | Điều khiển riêng Trục Phụ 1 | **Chỉ Motor 2** |
+| **`M3 <lệnh>`** / **`SUB2 <lệnh>`** | Điều khiển riêng Trục Phụ 2 | **Chỉ Motor 3** |
+| **`SUBS <lệnh>`** / **`PHU <lệnh>`** | Điều khiển 2 Trục Phụ | **Motor 2 + Motor 3** |
 
 ---
 
-### E. Tín hiệu Màn hình LCD 20x4 Kèm Module I2C (PCF8574)
+## 4. Sơ Đồ Đấu Nối Động Cơ Servo RDS51150-270 (150kg.cm) + Nguồn Tổ Ong 12V + ESP32-S3
 
-| Chân trên Module I2C | Chân trên ESP32-S3 | Chức năng & Ghi chú |
-| :--- | :--- | :--- |
-| **`VCC`** | **`5V`** *(hoặc `VIN`)* | Nguồn dương nuôi LCD 20x4 (Bắt buộc dùng 5V để chữ hiển thị rõ nét) |
-| **`GND`** | **`GND`** | Nguồn âm Mass chung |
-| **`SDA`** | **`GPIO 8`** | Dữ liệu giao tiếp I2C Data |
-| **`SCL`** | **`GPIO 9`** | Xung đồng hồ giao tiếp I2C Clock |
+### A. Bảng Đấu Dây Chi Tiết:
 
-> 💡 **Lưu ý:** Nếu chữ bị mờ hoặc hiện các ô vuông đen, dùng tuốc nơ vít xoay nhẹ biến trở màu xanh dương ở mặt sau module I2C để tinh chỉnh độ tương phản (Contrast).
-
----
-
-## 3. Lưu ý Kỹ thuật về Tín hiệu Điều khiển 3.3V và Driver DM542E
-
-1. **Điện áp cách ly quang (Optocoupler Input) của DM542E:**
-   - Các cổng tín hiệu vào của DM542E (PUL, DIR, ENA) sử dụng optocoupler cách ly quang tích hợp sẵn điện trở hạn dòng ~270Ω (chuẩn 5V).
-   - Khi đấu trực tiếp với mức **3.3V** của ESP32-S3, dòng kích qua LED opto rơi vào khoảng `(3.3V - 1.2V) / 270Ω ≈ 7.8mA`, thường đủ để kích hoạt optocoupler ở tần số thấp và trung bình.
-2. **Khi nào cần Mạch chuyển đổi mức (Level Shifter / Buffer / Transistor)?**
-   - Nếu động cơ bị mất bước ở tốc độ cao hoặc driver không nhận tín hiệu ổn định do dòng từ GPIO 3.3V yếu.
-   - Khi muốn dùng nguồn tín hiệu chuẩn **5V** cho PUL+/DIR+/ENA+ của DM542E: **BẮT BUỘC** phải dùng IC đệm chuyển mức logic 3.3V -> 5V (như `74HCT245`, `74HCT14` hoặc module Level Shifter/Optocoupler cách ly trung gian), **KHÔNG ĐƯỢC** cấp 5V vào PUL+ rồi nối PUL- trực tiếp vào GPIO của ESP32-S3 mà không có mạch đệm bảo vệ.
+| Đầu Cáp Servo RDS51150-270 | Chân Nguồn Tổ Ong 12V | Chân Vi Điều Khiển ESP32-S3 | Chức Năng & Quy Chuẩn |
+| :--- | :--- | :--- | :--- |
+| **Dây ĐỎ (VCC)** | **`V+` (+12VDC)** | *(KHÔNG NỐI vào ESP32)* | Nguồn dương động lực 12V (Tiết diện $\ge 0.75\text{mm}^2$) |
+| **Dây ĐEN / NÂU (GND)** | **`COM` / `V-` (0VDC)** | **`GND` (Mass tín hiệu)** | **NỐI CHUNG MASS (Common Ground 0V)** |
+| **Dây TRẮNG / VÀNG (PWM)** | *(Không nối nguồn)* | **`GPIO 4`** (hoặc GPIO 5, 6, 7...) | Tín hiệu xung PWM $50\text{Hz}$ (Mức logic 3.3V) |
 
 ---
 
-## 4. Bảng Lệnh Điều khiển qua Serial Monitor & Trạng thái Màu Đèn LED RGB
+### B. Sơ Đồ Khối Đấu Nối Trực Quan:
 
-Mở Serial Monitor trên máy tính (baud 115200) và gửi các lệnh sau:
-
-| Lệnh nhập | Ý nghĩa | Màu Đèn LED RGB trên ESP32 | Ví dụ |
-| :--- | :--- | :---: | :--- |
-| **`1600`** hoặc **`STEP 1600`** | Chạy đúng số bước rồi **TỰ ĐỘNG DỪNG** | 🩵 **Xanh ngọc (Cyan)** $\rightarrow$ 🟣 **Tím khi xong** | Gõ `1600` (chạy 1600 bước rồi dừng), `3200` |
-| **`CONT`** hoặc **`RUN`** | Quay LIÊN TỤC theo tốc độ xung/giây | 🟢 **Xanh lá cây (Green)** | Gõ `RUN` hoặc `CONT` |
-| **`STOP`** hoặc **`DUNG`** | Dừng khẩn cấp động cơ (khóa trục) | 🔴 **Đỏ (Red)** | Gõ `STOP` |
-| **`SPEED <xung/giây>`** | Đổi tốc độ trực tiếp (Xung/s) | 🩵 **Xanh lam (Sky Blue)** | Gõ `SPEED 1600`, `SPEED 800` |
-| **`F`** hoặc **`THUAN`** | Quay theo chiều THUẬN | 🟡 **Vàng (Yellow)** | Gõ `F` |
-| **`R`** hoặc **`NGUOC`** | Quay theo chiều NGƯỢC | 🟠 **Cam (Orange)** | Gõ `R` |
-| **`D`** hoặc **`DAO`** | Đảo chiều quay | ⚪ **Trắng (White)** | Gõ `D` |
-| **`HELP`** hoặc **`?`** | Xem lại bảng menu hướng dẫn | ⚪ **Trắng (White)** | Gõ `HELP` |
+```text
+  [NGUỒN ĐIỆN LƯỚI AC 220V]
+             |
+       +-----+-----+
+       | L       N |
+       v         v
++-----------------------------+
+| NGUỒN TỔ ONG 12V MEAN WELL  |
+|  [L]   [N]   [PE] [COM] [V+]|
++---------------------+----+--+
+                       |    |
+   +-------------------+    +----------------------+
+   | (Mass 0V - Nối chung)                         | (+12V DC Nguồn động lực)
+   v                                               v
++-------------------------+            +----------------------------+
+| ESP32-S3 DevKitC-1      |            | SERVO RDS51150-270 (150kg) |
+|                         |            |                            |
+|             [GND]-------+----------->| Dây ĐEN / NÂU (GND - 0V)   |
+|                         |            |                            |
+|  [GPIO 4 (Xung PWM)]----+----------->| Dây TRẮNG / VÀNG (Signal)  |
+|                         |            |                            |
+| [USB 5V (Nguồn nuôi MCU)]|           | Dây ĐỎ (VCC - +12V) <------+
++-------------------------+            +----------------------------+
+```
 
 ---
 
-## 5. Cài đặt Switch trên DM542E (Tham khảo)
-- **SW1, SW2, SW3 (Cài đặt dòng điện - Output Current):**
-  - Động cơ 42CM06-RD có dòng định mức khoảng 2.5A. Cài đặt SW1-SW3 trên DM542E ở mức RMS 2.0A - 2.5A (hoặc Peak 2.8A - 3.5A) phù hợp để tránh motor quá nóng.
-- **SW4 (Chế độ Standstill Current):**
-  - `OFF`: Giảm một nửa dòng khi đứng yên (Half Current - Khuyên dùng để giảm nhiệt khi motor dừng).
-  - `ON`: Giữ nguyên dòng đầy đủ (Full Current).
-- **SW5, SW6, SW7, SW8 (Cài đặt Vi bước - Microstep):**
-  - Tùy chỉnh số xung/vòng (Pulse/rev).
+### C. Cảnh Báo & Quy Tắc Kỹ Thuật Quan Trọng:
+1. ⛔ **CẤM CẤP NGUỒN 12V VÀO ESP32-S3:** Dây Đỏ 12V chỉ cấp riêng vào Dây Đỏ của Servo. Tuyệt đối không cắm 12V vào chân 5V, 3.3V hay bất kỳ chân GPIO nào của ESP32-S3.
+2. 🔗 **BẮT BỘC NỐI CHUNG MASS GND (Common Ground):** Chân `COM / V-` của Nguồn 12V, chân `GND` của ESP32-S3 và Dây Đen/Nâu của Servo **bắt buộc phải gom chung vào 1 mối**. Nếu không nối chung Mass, Servo sẽ bị giật/rung lắc không kiểm soát được góc.
+3. ⚡ **DÒNG ĐỈNH KHỞI ĐỘNG LỚN (Stall Current):** Servo RDS51150 tiêu thụ dòng đỉnh tới $5\text{A} - 8\text{A}$ khi tải nặng. Bộ nguồn tổ ong 12V phải chọn công suất tối thiểu **12V - 5A ($60\text{W}$)** hoặc **12V - 10A ($120\text{W}$)**.
 
